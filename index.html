@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>Arnav's Engineering Portfolio</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="./style.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-sm navbar-dark">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-5">
+      <h2 class="nav-title">Arnav's Engineering Portfolio</h2>
+      <div class="navbar-nav">
+        <a class="nav-link active" href="./index.html">Home</a>
+        <a class="nav-link" href="./about.html">About Me</a>
+
+        <div class="nav-item dropdown">
+          <!-- now a normal in-page link -->
+          <a
+            class="nav-link"
+            href="#selected-work"
+            id="projectsDropdown"
+            aria-expanded="false"
+          >
+            Selected Work <span style="margin-left:1px; font-size:0.99em;">▾</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectsDropdown" id="dropdown-content"></ul>
+        </div>
+        
+      </div>
+    </div>
+  </nav>
+  
+
+  <!-- red background "hero" section -->
+  <section class="hero-section">
+    <div class="container">
+      <div class="row align-items-center">  
+        <!-- Text column, md 7/12 of row; ps/pe is left/right padding -->
+        <div class="col-md-7 pe-lg-5 ps-lg-5">
+          <h1 class="display-4">HI, MY NAME IS ARNAV.</h1>
+          <p>
+            Currently, I’m a Silicon Design Engineer @ Apple (more
+            <a href="./about.html" class="text-white text-decoration-underline">here</a>).
+          </p>
+          <p class="mb-0">
+            I am deeply excited about the future of helpful and intuitive embodied intelligence 🤖. 
+          </p>
+          <p>
+            As my passion has continued to grow over the past year, I have developed a strong conviction that this is 
+            the space I want to contribute in for the rest of my career.
+          </p>
+
+          <p>
+            <strong>
+              This website showcases some of my recent projects in <u>machine learning</u> and <u>robotics</u>.
+            </strong>
+          </p>
+          <!-- mb-1 set bottom-margin to 0.25rem (instead of the default 1rem).  -->
+          <p class="mb-1">
+            I have a demonstrated ground-up understanding of:
+          </p>
+          <!-- mt-1 sets top-margin to 0.25rem -->
+          <ul class="ps-3 fs-6 mt-1">
+            <li>Reinforcement Learning (PPO, DQN, Q*)</li>
+            <li>Perception (ViTs, Deep CNNs)</li>
+            <li>Language Modeling (Language Transformers)</li>
+          </ul>
+          <p>
+            I also have strong fundamentals in ML, robotics, and computer vision via college coursework and independent study.
+          </p>
+          <p>
+            I am eager to grow alongside intelligent people, and push forward the envelope on intelligent robotics.
+          </p>
+        </div>
+
+        <!-- Image column, md 5/12 of row -->
+        <div class="col-md-5 text-left ps-lg-5 pe-lg-5">
+          <figure class="figure">
+            <img 
+              src="./graduation_pic.jpeg" 
+              alt="Harvard '23 Grad Pic" 
+              class="figure-img img-fluid rounded"
+            >
+            <figcaption class="figure-caption text-white ps-2">
+              <p class="fst-italic mb-0 fs-6">
+                Harvard University, Class of 2023
+              </p>
+              <ul class="ps-3 fs-6 mb-0">
+                <li>B.A. in Physics, minor in Computer Science</li>
+                <li>M.S. in Electrical & Computer Engineering</li>
+              </ul>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- white background selected work section w/ Feynman quote -->
+  <section id="selected-work" class="selected-work-section">
+    <h2 class="selected-work-title">SELECTED WORK</h2>
+    <p class="selected-work-quote">
+      "What I cannot create, I do not understand" — Richard Feynman
+    </p>
+  </section>
+  
+
+  <!-- white background portfolio view (3x3) grid -->
+
+  <xmp style="display:none;">
+
+  <div class="container-fluid bg-3 text-center">
+    
+    <div class="row">
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./ur5e_bob/ur5e_bob.gif" alt = "week 1 placeholder"> </image>
+        <br><h5 class="mt-2">[BOB TITLE HERE](./ur5e_bob/index.html)</h5>
+      </div>
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./ur5e_bob/ur5e_bob.gif" alt = "week 2 placeholder"> </image>
+        <br><h5 class="mt-2">[BOB TITLE HERE](./ur5e_bob/index.html)</h5>
+      </div>
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./ur5e_bob/ur5e_bob.gif" alt = "week 3 placeholder"> </image>
+        <br><h5 class="mt-2">[BOB TITLE HERE](./ur5e_bob/index.html)</h5>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./04_microcontroller/week4-placeholder-image.jpg" alt = "week 4 placeholder"> </image> 
+        <br>[Week 4: Programming](./04_microcontroller/index.html)
+      </div>
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./05_3Ddesign/week5-placeholder-image.jpg" alt = "week 5 placeholder"> </image>
+        <br>[Week 5: 3D Design](./05_3Ddesign/index.html)
+      </div>
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./06_inputs/week6-placeholder-image.jpg" alt = "week 6 placeholder"> </image>
+        <br>[Week 6: Inputs](./06_inputs/index.html)
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./07_outputs/week7-placeholder-image.jpg" alt = "week 7 placeholder"> </image>
+        <br>[Week 7: Outputs](./07_outputs/index.html)
+      </div>
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./08_cnc/week8-placeholder-image.jpg" alt = "week 8 placeholder"> </image>
+        <br>[Week 8: CNC](./08_cnc/index.html)
+      </div>
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./09_networking/week9-placeholder-image.jpg" alt = "week 9 placeholder"> </image>
+        <br>[Week 9: Networking](./09_networking/index.html)
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./10_machine/machine-placeholder-image.jpg" alt = "machine building placeholder"> </image>
+        <br>[Machine Building](./10_machine/index.html)
+      </div>
+      <div class="col-sm-4">
+        <image style = "width: 75%"src = "./13_finalproject/final-project-placeholder-image.jpg" alt = "final project placeholder"> </image> 
+        <br>[Final Project](./13_finalproject/index.html)
+      </div>
+    </div>
+  </div>
+  </xmp>
+
+  <br>
+  <br>
+
+
+  <!-- Back-to-Top button -->
+  <div id="backToTop" title="Go to top">  Back to Top ▲  </div>
+  <script>
+    // Get the button
+    const backToTopBtn = document.getElementById('backToTop');
+  
+    // 1) Show/hide button when scrolling
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        // If scrolled more than 300px, show the button
+        backToTopBtn.classList.add('show');
+        backToTopBtn.classList.remove('hide');
+      } else {
+        // Otherwise, hide it
+        backToTopBtn.classList.add('hide');
+        backToTopBtn.classList.remove('show');
+      }
+    });
+  
+    // // scroll to top on hover
+    // backToTopBtn.addEventListener('mouseenter', () => {
+    //   window.scrollTo({ top: 0, behavior: 'smooth' });
+    // });
+
+    // scroll to top on click
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+
+  <script>
+    fetch("/dropdown.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("dropdown-content").innerHTML = html;
+      });
+  </script>
+</body>
+
+<footer class="footer-bar">
+  <div class="container text-center py-2">
+    <a
+      class="footer-link"
+      href="https://www.linkedin.com/in/arnav-srivastava/"
+      target="_blank"
+      rel="noopener"
+    >
+      <p class="fs-5">
+        Want to get in touch? Reach out to me on LinkedIn
+        <i class="bi bi-linkedin" style="font-size: 1.5rem;"></i>
+      </p>
+    </a>
+  </div>
+</footer>
+
+<script src="./strapdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>

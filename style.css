@@ -1,0 +1,330 @@
+@import url(https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap);
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css');
+
+
+/* Base styles for the entire page */
+body {
+  /* Set base font size to 20px and preferred fonts */
+  font: 17px "Open Sans", "Gill Sans", Verdana, sans-serif;
+  /* Increase line spacing to 1.8 times font height */
+  line-height: 1.8;
+  /* Default text color: black */
+  color: #000000;
+  /* Page background color: light gray */
+  background-color: #ffffff;
+  /* Force top padding to zero (override others) */
+  padding-top: 0px !important;
+}
+
+/* Wrapper for text blocks, adds padding around content */
+.textcontainer {
+  /* 2% padding top/bottom, 10% left/right */
+  padding: 2% 10%;
+}
+
+/* Paragraph tags get a font size of 16px */
+p {
+  font-size: 16px;
+}
+
+/* Utility class for bottom margin */
+.margin {
+  /* 30px space below element */
+  margin-bottom: 30px;
+}
+
+/* Default link color */
+a {
+  /* Black text for all anchors */
+  color: #000000;
+}
+
+/* Overrides Bootstrap's container-fluid padding */
+.container-fluid {
+  /* Remove all padding */
+  padding: 0px;
+  /* Optional bottom padding (currently commented out) */
+  /* padding-bottom: 70px; */
+}
+
+/* Styles for the <nav> element */
+nav {
+  /* Navbar background matches page */
+  background-color: #c20f0f;
+  /* Text color inside nav: off-white */
+  color: #ffffff;
+  /* 50px vertical padding, none horizontal */
+  padding: 25px 0px;
+}
+
+/* Flex container for nav links */
+.navbar-nav {
+  /* Use flexbox layout */
+  display: flex;
+  /* Align items at start of container */
+  justify-content: flex-start;
+  /* 30px gap between each link */
+  gap: 30px;
+}
+
+/* Title styling inside navbar */
+.nav-title {
+  /* Spacing on left and right of title */
+  margin-left: 7px;
+  margin-right: 15px;
+  color: #ffffff;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 1.4rem;      /* 2 × the root font size (≈32px) */
+}
+
+/* Default nav-link (button-like) styling */
+.nav-link {
+  /* Raised 3px border in gray OUTSET COLOR CHANGE to animate hover*/
+  /* border: 3px outset #a3a3a3; */
+  border: 3px;
+  /* Rounded corners */
+  border-radius: 0.5rem;
+  /* Internal padding for clickable area */
+  padding: 10px 30px;
+  /* Gray background behind link... keeping transparent */
+  /* background-color: #a3a3a3; */
+  /* text color, !important needed to override bootstrap.css */
+  color: #ffffff !important;
+  /* Smooth 0.3s transition on hover */
+  transition: 0.1s;
+  font-size: 1.1rem;      /* 2 × the root font size (≈32px) */
+}
+
+/* Hover state for nav links */
+.nav-link:hover {
+  /* White raised border on hover OUTSET COLOR CHANGE to animate hover*/
+  /* border: 3px outset #FFFFFF; */
+  border: 3px;
+  /* Maintain rounded corners */
+  border-radius: 0.5rem;
+  /* Keep same padding */
+  padding: 10px 30px;
+  /* Gray background behind link... keeping transparent */
+  /* background-color: #a3a3a3; */
+  /* text color, !important needed to override bootstrap.css*/
+  color: #e4e2e2 !important;
+  /* Transition duration */
+  transition: 0.1s;
+}
+
+/* Box over current link */
+.nav-link.active {
+  border: 2px solid #ffffff;   /* white box */
+  border-radius: 0.5rem;        /* rounded corners */
+  padding: 8px 30px;
+}
+
+/* show dropdown-menu when hovering its parent nav-item */
+.nav-item.dropdown:hover > .dropdown-menu {
+  display: block;
+  margin-top: 0;        /* remove Bootstrap’s default 0.125rem offset */
+}
+
+/* pin the menu’s right edge */
+.dropdown-menu-end {
+  right: -20px;
+  left: -20px;
+}
+
+/* allow text wrapping in dropdown menu items */
+.dropdown-menu .dropdown-item {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* cap dropdown width so it never grows too big */
+.dropdown-menu {
+  max-width: 30rem;
+}
+
+
+/* Hero strip immediately under the navbar */
+.hero-section {
+  /* match Bootstrap’s “bg-danger” */
+  background-color: #c20f0f;      
+  /* same as “text-white” */
+  color: #ffffff;
+  padding-top: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+/* apply Oswald to just the hero H1 */
+.hero-section h1 {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;       
+}
+
+/* Section for 'Selected Work' */
+.selected-work-section {
+  /* background-color: white; */
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+/* Oswald for heading */
+.selected-work-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;       
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+/* Caveat for quote */
+.selected-work-quote {
+  font-family: 'Caveat', cursive;
+  font-size: 1.6rem;
+  color: #000;
+}
+
+/* Specific button ID styling */
+#btn {
+  /* White raised border */
+  border: 3px outset #FFFFFF;
+  /* Extra-rounded corners */
+  border-radius: 40px;
+  /* Padding for button feel */
+  padding: 10px 30px;
+  /* Gray background */
+  background-color: #a3a3a3;
+  /* Black text */
+  color: #000000;
+  /* Smooth animations */
+  transition: 0.3s;
+}
+
+/* Hover state for specific button */
+#btn:hover {
+  /* Inset border to look pressed */
+  border: 3px inset #FFFFFF;
+  /* Maintain rounded shape */
+  border-radius: 40px;
+  /* Keep padding */
+  padding: 10px 30px;
+  /* Gray background */
+  background-color: #a3a3a3;
+  /* Transition timing */
+  transition: 0.3s;
+}
+
+.hero-section-about {
+  /* match Bootstrap’s “bg-danger” */
+  background-color: #c20f0f;      
+  /* same as “text-white” */
+  color: #ffffff;
+  padding-top: 0rem;
+  padding-bottom: 1rem;
+}
+
+.hero-section-proj {
+  /* match Bootstrap’s “bg-danger” */
+  background-color: #c20f0f;      
+  /* same as “text-white” */
+  color: #ffffff;
+  text-align: center;
+}
+
+.oswald-heading {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 500;
+}
+  
+/* Footer bar background + text color */
+.footer-bar {
+  background-color: #c20f0f; /* same red as hero */
+  color: #ffffff;            /* white text */
+}
+
+/* Make sure links inside the footer stay white */
+.footer-bar .footer-link {
+  color: #ffffff;
+  text-decoration: none !important;     
+  font-weight: 500;
+}
+
+/* On hover, lighten up the link */
+.footer-bar .footer-link:hover {
+  color: #e4e2e2;
+  text-decoration: none !important;
+}
+
+/* Override Bootstrap .row margins to center them */
+.row {
+  /* Center rows horizontally */
+  margin: auto auto;
+}
+
+/* Utility flex container: evenly space children */
+.flexrow {
+  /* Flex layout */
+  display: flex;
+  /* Even spacing around items */
+  justify-content: space-evenly;
+}
+
+/* Center-justify flex container */
+.center-row {
+  /* Flex layout */
+  display: flex;
+  /* Center children */
+  justify-content: center;
+}
+
+/* Inline code styling */
+code {
+  /* Dark background for code blocks */
+  background-color: #2d2b33;
+  /* Light text in code */
+  color: #EEE7E8;
+  /* Monospace font for code readability */
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Caption text under images or figures */
+.caption {
+  /* Gray italic text */
+  color: gray;
+  font-size: 16px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* “Back to Top” button, initially hidden */
+#backToTop {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 0rem 0.7rem;       /* top/bottom 0.5rem, left/right 1rem */
+  background-color: #c20f0f;   /* same red as footer/hero */
+  color: #ffffff;
+  font-size: 0.6rem;
+  line-height: 2.5rem;
+  text-align: center;
+  border-radius: 1rem;
+
+  cursor: pointer;
+  display: none;              /* hide by default */
+  transition: opacity 0.2s ease;
+  z-index: 1000;              /* sit above other content */
+}
+
+/* backToTop hover button */
+#backToTop.show {
+  display: block;
+  opacity: 1;
+}
+#backToTop.hide {
+  opacity: 0;
+}
+/* On hover: change background-color slightly */
+#backToTop:hover {
+  background-color: #a30d0d;  /* darker red on hover */
+}

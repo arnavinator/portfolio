@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Arnav's Engineering Portfolio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../style.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],       // inline delimiters
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],    // display delimiters
+        packages: ['base', 'ams']                       // load AMS TeX extensions
+      },
+      options: {
+        // ensure MathJax processes dynamically‐added content
+        processHtmlClass: 'arithmatex',   
+        skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-sm navbar-dark">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-5">
+      <h2 class="nav-title">Arnav's Engineering Portfolio</h2>
+      <div class="navbar-nav">
+        <a class="nav-link" href="../index.html">Home</a>
+        <a class="nav-link" href="../about.html">About Me</a>
+
+        <div class="nav-item dropdown">
+          <!-- now a normal in-page link -->
+          <a
+            class="nav-link active"
+            href="../index.html#selected-work"
+            id="projectsDropdown"
+            aria-expanded="false"
+          >
+            Selected Work <span style="margin-left:1px; font-size:0.99em;">▾</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectsDropdown" id="dropdown-content"></ul>
+        </div>
+        
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero-section-proj">
+    <div class="textcontainer">
+      <h1 class="oswald-heading">
+        <u>UR5e BLOCK BUILDER</u>
+      </h1>
+      <h3 class="oswald-heading"><span style="color: rgb(242, 242, 242);">
+        IMU-guided Inverse Kinematics + Automatic Object Detection & Grabbing 
+      </span></h3>
+      <h6><span style="color: rgb(242, 242, 242);">
+        <em>Skills: Forward/Inverse Kinematics, Trajectory Control, Computer Vision, Hardware Design</em>
+      </span></h6>
+    </div>
+  </section>
+
+  <section class="textcontainer">
+    <h2 class="mb-4">Overview</h2>
+
+    <div class="row gx-0 mb-4 mt-4 align-items-center">
+      <div style="width: 30%; padding:0;" class="custom-column">
+        <img src="./cropped_ur5e_bob.gif" class="img-fluid">
+      </div>
+      <div style="width: 34%; padding:0;" class="custom-column">
+        <div class="mb-3">
+          <img src="./UR5e_PoE_deriv.png" class="img-fluid">
+        </div>
+        <div>
+          <img src="./original_blocks.png" class="img-fluid">
+        </div>
+      </div>
+      <div style="width: 2%; padding:0;" class="custom-column">
+      </div>
+      <div style="width: 34%; padding:0;" class="custom-column">
+        <img src="./board_overview.png" class="img-fluid">
+      </div>
+    </div>
+
+    <!-- Second row: 3 images -->
+    <div class="row">
+      <div class="col-md-1">
+      </div>
+      <div class="col-md-5">
+        <img src="./thresh_blocks.png" class="img-fluid rounded" style="width: 86%;">
+      </div>
+      <div class="col-md-5">
+        <img src="./remote_actions.png" class="img-fluid rounded" >
+      </div>
+      <div class="col-md-1">
+      </div>
+    </div>
+
+    <br> <br> 
+    In this project, I created a "block manipulation pipeline" which automates
+     repetitive tasks that don't require human input (<em>Automated Block Grabbing</em>)
+    and provides an intuitive real-time interface to control the robot for tasks which need human 
+    input (<em>User-Driven Block Manipulation</em>).
+    <ul>
+      <li>
+        <em>Automated Block Grabbing:</em> An exocentric camera and computer vision pipeline determines the position of
+        all valid blocks in a designated “block pile.” The UR5e can <strong>automatically grab the closest valid block 
+          and return control back to the user for block placement.</strong>
+      </li>
+      <li>
+        <em>User-Driven Block Manipulation:</em> An Arduino interface manages an IMU guiding the position of the UR5e end-effector gripper 
+        (orientation is fixed), the gripper state (open/close), control mode, and control sensitivity. The user can <strong>guide 
+        UR5e in realtime to where exactly it should place a grabbed block.</strong>
+      </li>
+    </ul>
+    
+    The following concepts were applied for this project:
+    <ul>
+      <li>
+          To move the end-effector into the desired state for each waypoint in a trajectory, 
+          <strong>Product of Exponentials <a href="#fk_theory">Forward Kinematics</a></strong> 
+          and <strong>Newton-Raphson Numerical <a href="#ik_theory">Inverse Kinematics</a></strong>
+          was used.
+      </li>
+      <li>
+         To determine valid blocks and their location, 
+         <strong>image thresholding, convolution, and Bounding Box algorithm </strong> was used 
+         in the <strong><a href="#cv_theory">Computer Vision pipeline</a></strong>.
+      </li>
+      <li>
+        To understand the mapping between the IMU and trajectory generation 
+        as well as other controls, see <strong><a href="#sw_overview">Software Overview</a></strong> 
+        and <strong><a href="#hw_overview">Hardware Overview</a></strong>.      
+      </li>
+    </ul>
+
+  </section>
+  
+  <div class="textcontainer">
+
+    <section class="table-of-contents">
+      <hr>
+
+      <h2 class="mb-3">Table of Contents</h2>
+      <ul>
+        <li><a href="#sw_overview">Software Overview</a></li>
+        <ul>
+          <li><a href="#fk_theory">Forward Kinematics Theory</a></li>
+          <li><a href="#ik_theory">Inverse Kinematics Theory</a></li>
+          <li><a href="#cv_theory">Computer Vision Theory</a></li>
+        </ul>
+        <li><a href="#hw_overview">Hardware Overview</a></li>
+        <ul>
+          <li><a href="#imu">IMU Mapping</a></li>
+        </ul>
+        <li><a href="#code">Full Code + Demo</a></li>
+      </ul>
+
+      <br> <br> 
+    </section>
+
+
+    <section id="sw_overview">
+      <hr>
+      <h2>Software Overview</h2>
+      <ol type="1">
+        <li>Initialize Arduino interface (flash firmware to communicate with MATLAB via USB).</li>
+        <li>Calibrate the IMU (moving the IMU around in various spins and loops helps 
+          align the sensors on board the IMU, and the IMU indicates when it is calibrated).</li>
+        <li>Determine all valid blocks on the table which can be used for the building process.</li>
+        <ol type="i">
+          <li>Place 2 different reference platform blocks which represents the top-leftmost 
+            and bottom-rightmost blocks at known locations. Place all blocks which can be used 
+            for building between the "box" created by the top-leftmost and bottom-rightmost blocks.</li>
+          <li>Use exocentric USB-based camera above the table to take a picture of the table.</li>
+          <li>Determine the centroids of all the blocks in the thresholded image.</li>
+          <li>Map the top-leftmost centroid and the bottom-rightmost centroid to their respective 
+            locations (which we know in real space). Remove these two centroids from our list 
+            as valid blocks to grab (since they exist for reference purposes only, although 
+            conceptually there is no reason to not grab them)</li>
+        </ol>
+        <li>Move robot to initial rotation orientation of with (x = 650mm, y = 0mm, z = 100mm).
+          We will not change this rotation orientation of the gripper for the entire algorithm, 
+          since this is the preferred orientation for grabbing blocks. </li>
+        <li>Run the continuous monitoring algorithm, where the Arduino interface
+           will keep monitoring inputs to initiate 1 of 3 operation modes:</li>
+        <ol type="i">
+          <li><u>Automatic grabbing of closest block:</u></li>
+          <ol type="a">
+            <li>Choose the desired block to pick (leftmost and topmost block). 
+              Remove this block from valid list of block centroids (not needed 
+              if centroids dynamically recalculated each iteration).</li>
+            <li>From the end-effector’s given position, move the robot from its current height 
+              to z = 100mm while maintaining the (x,y) position (this ensures that the gripper
+               does not knock over any existing block structures by raising it sufficiently high).</li>
+            <li>Move the end-effector’s (x,y) location of the center of the desired 
+              block to pick while maintaining the gripper’s height. </li>
+            <li>Open the gripper.</li>
+            <li>Lower the end-effector down to grab the block 
+              at z = -150mm while maintaining the gripper’s (x,y) position.</li>
+            <li>Close the gripper.</li>
+            <li>Raise the block to z = 50mm, while still maintaining the desired (x,y). </li>
+            <li>Return to beginning of step 5 to determine next operation mode.</li>
+          </ol>
+          <li><u>IMU-based gripper translational "remote control":</u></li>
+          <ol type="a">
+            <li>Mapping yaw orientation to the z-coordinate, pitch orientation to y-coordinate, 
+              and roll orientation to x-coordinate, process these IMU orientation readings, and 
+              in accordance to the potentiometer reading, determine the desired (x,y,z) 
+              the end-effector should be relative to the current (x,y,z).</li>
+            <ul>
+              <li>A potentiometer determines the sensitivity relationship between an 
+                IMU orientation reading to how much the end-effector should be manipulated.</li>
+              <li>A high sensitivity means that a given IMU inputs lead to large end-effector
+                 displacement, whereas a low sensitivity allows for finer-grained end-effector 
+                 controlled as IMU inputs lead to smaller displacements.</li>
+            </ul>
+          </ol>
+          <li><u>Opening the gripper:</u></li>
+          <ol type="a">
+            <li>Robot will open its gripper. This button 
+              will lead to the release of the block (should be pressed once a desirable
+               (x,y,z) position is attained).</li>
+          </ol>
+        </ol>
+      </ol>
+
+      <br> <br> 
+    </section>
+
+    <section id="fk_theory">
+      <hr>
+      <h2>Forward Kinematics Theory</h2>
+      <strong>Forward Kinematics (FK)</strong> allows one to determine how an array of UR5e joint angles affects a robot's end-effector
+      position and orientation (by yielding a Transformation matrix which is a function of joint angles). 
+      <br> <br> 
+
+      FK can be from <strong>Denavit-Hartenberg (D-H)</strong> formulation or from <strong>Product of Exponentials (PoE)</strong> 
+      formulation. I have done both and they are equivalent; my code uses PoE for Forward Kinematics. 
+      The key idea behind PoE is that (by the Chasles-Mozzi Theorem) any homogeneous transformation 
+      can be expressed as an exponential-skew-symmetric matrix about its screw axis (the 
+      unit axis about which linear/angular velocity occurs for a joint), such that we can express a single
+      end-effector state Transformation <em>T</em> as series of homogeneous transformations 
+      for a <em>k</em>-chain manipulator as follows:  
+
+      $$ T = \prod_{i=1}^k e^{[S_i]\theta_i}M $$
+
+      where
+
+      <ul>
+        <li>$[S_i] \in \mathbb{R}^{4X4}$ is the skew-symmetric form of Screw Axis $(w_i, v_i) = S_i \in \mathbb{R}^6$</li>
+        <li>$\theta_i \in \mathbb{R}$ is the angular displacement of joint $i$</li>
+        <li>$M \in \mathbb{R}^{4X4}$ is the transformation from Fixed Frame to End-Eﬀector frame when the robot is in its zero position (ie all $\theta_i = 0$)</li>
+      </ul>
+
+      For the UR5e robot of interest, the PoE derivation is as follows:
+      
+      <figure class="figure">
+        <img 
+          src="./UR5e_PoE_deriv.png" 
+          class="figure-img img-fluid rounded mx-auto d-block"
+          style="width: 50%;"
+          alt="UR5e PoE derivation"
+        >
+      </figure>
+
+      Based on the Figure above of the UR5e in its home position, we determine the Fixed Frame $\{s\}$ to End-Effector Frame $\{b\}$ orientation 
+      transformation given by $Rot(z,180) @ Rot(x,90)$ and displacement given by $(L_1+L_2) \hat x_s$, $(W_1+W_2) \hat y_s$, $(H_1 - H_2) \hat z_s$, 
+      such that we have:
+
+      $$
+        M = 
+        \begin{bmatrix}
+        -1 & 0 & 0 & L_1 + L_2 \\\
+        0 & 0 & 1 & W_1 + W_2 \\\
+        0 & 1 & 0 & H_1 - H_2 \\\
+        0 & 0 & 0 & 1
+        \end{bmatrix}
+      $$
+
+      The screw axes $S_i = (\omega_i, v_i)$ can then be derived as:
+
+      $$
+      \begin{array}{c|c|c}
+      \displaystyle i & \displaystyle \omega_i & \displaystyle v_i \\
+      \hline
+      1 & (0,0,1) & (0,0,0) \\
+      2 & (0,1,0) & (-H_1,0,0) \\
+      3 & (0,1,0) & (-H_1,0,L_1) \\
+      4 & (0,1,0) & (-H_1, 0, L_1+L_2) \\
+      5 & (0,0,-1)& (-W_1, L_1+L_2, 0) \\
+      6 & (0,1,0) & (H_2-H_1, 0, L_1+L_2)
+      \end{array}
+      $$
+
+      Given our $\theta_i$ for each of 6 joints, we now have a way to derive $T$<sub>$sb$</sub>, such that we can determine the
+      end-effector orientation and position based on each joint's angle.
+    <br> <br> 
+    </section>
+
+    <section id="ik_theory">
+      <hr>
+      <h2>Inverse Kinematics Theory</h2>
+      <strong>Inverse Kinematics (IK)</strong> allows one to determine the array of UR5e joint angles needed to reach a robot's end-effector
+      position and orientation. In this sense, IK does the opposite of FK.
+      
+      <br> <br> 
+      Similar to general Taylor Approximation, IK using <strong>Newton-Raphson Numerical Algorithm</strong> takes a control step towards the suggestion of the Jacobian around the current control/state,
+      and keeps repeating the process with the updated Jacobian until the algorithm converge to some goal (minimize some cost).
+      
+      <br> <br> 
+      Intuitively, suppose we have a 3-dimensional desired end-effector position $x_d$, and 
+      let $f(\theta)$ be our forward-kinematics map ($f(\theta): \mathbb{R}^6 \rightarrow \mathbb{R}^3$). We want to find $\theta_d$ such that
+      $ f(\theta_d) = x_d$.
+      
+      <br> <br> 
+      <br> <br> 
+      We do a first-order Taylor expansion of $f$ and $\theta^0$ (an initial guess for $\theta_d$) as follows:
+
+      $$
+        x_d = f(\theta_d) = f(\theta^0) + \underbrace{\frac{\partial f}{\partial \theta} \bigg|_{\theta^0}}_{J(\theta^0)} \ \underbrace{(\theta_d - \theta^0)}_{\Delta \theta} + \mathrm{h.o.t.}
+      $$
+
+      The the first order derivative in this case is our <em>Jacobian</em>, expressing how each dimension of $f$ (position) changes with respect to each 
+      dimension of $\theta$ (joints).
+      <br> <br> 
+      Rearranging, we can see that:
+      $$ J(\theta^0) \Delta \theta \approx x_d - f(\theta^0) $$
+      $$ \Delta \theta  \approx J^{-1}(\theta^0) (x_d - f(\theta^0)) $$
+      $$ \tilde{\theta_d}    =  \theta^0 + J^{-1}(\theta^0) (x_d - f(\theta^0)) $$
+
+      Where $\tilde{\theta_d}$ now have a guess for $\theta_d$ that is closer than $\theta^0$, but likely not 
+      exact since we ignored higher ordered terms (unless the Jacobian is linear). 
+      We can therefore repeat this process with $\theta^i \leftarrow \tilde{\theta_d}$ for $i \in \mathbb{N}$ and find an even closer guess for $\theta_d$, until
+      we reach some iteration where the solution has converged (where |$\tilde{\theta_d} - \theta_d| \lt \epsilon$ for some small $\epsilon$).
+      <br> <br> 
+      We now need to extend this idea from iteratively resolving the joint vector for a desired position $x_d \in \mathbb{R}^3$ 
+      to instead a desired transformation $T$<sub>$sd$</sub> $\in \mathbb{R}^{4x4}$ from fixed-frame $\\{ s \\}$ to desired body frame $\\{ d \\}$ . 
+      Note that while originally $\Delta \theta$ was the difference
+      between two positions, we cannot directly perform subtraction between a desired matrix and guess Transformation matrix, as that is 
+      not a valid operation in the Homogeneous coordinate space. 
+      <br> <br> 
+      An alternative interpretation of $\Delta \theta = (\theta_d - \theta^0)$ is that $\Delta \theta$ is a velocity vector,
+      which when followed over unit time leads from $f(x^0)$ to $x_d$. In Homogeneous coordinate space, following twist for unit time
+      leads from one pose to the other, and is analogous to our velocity interpretation in Cartesian space. Therefore, we want to 
+      determine the twist which captures the change from some guess Transformation (based on some initial $\theta$) to some desired Transformation and
+      then have this twist interact with $J^{-1}$.
+
+      <br> <br> 
+      <br> <br> 
+
+      More concretely, we define:
+      <ul>
+        <li>$T_{sd}$ as the desired Transformation matrix (from fixed-frame $\{s\}$ to body-frame $\{b\}$), for which we want to determine $\theta_d$</li>
+        <li>$T_{sb}(\theta^i)$ as the guess Transformation matrix determined by performing <strong><a href="#fk_theory">Forward Kinematics</a></strong> with $\theta$ for iteration $i$</li>
+        <li>$T_{bd}$ as the "Transformation difference" from $T_{sb}$ to $T_{sd}$, defined as $(T_{sb}^{-1}(\theta^i) \ T_{sd})$</li>
+      </ul>
+      Our algorithm is then:
+      <ol type="1">
+        <li>Define the skew-symmetric body twist matrix $[V_{bd}] = \log (T_{bd}) \in \mathbb{R}^{4x4}$.</li>
+        <li>Deskew the skew-symmetric body twist to get $V_{bd} \in \mathbb{R}^{6}$.</li>
+        <li>Define the initial guess to reach $T_{sd}$ as $\theta^0$.</li>
+        <li>While $|\theta^{i} - \theta^{i-1}| \geq \epsilon$ for some small $\epsilon$:</li>
+        <ol type = "i">
+            <li>$\theta^{i+1} = \theta^i + J^{-1}(\theta^i) V_{bd}$</li>
+        </ol>
+      </ol>
+
+      Once $|\theta^{i} - \theta^{i-1}| \lt \epsilon$, this means that our IK algorithm has converged and $\theta^i$ is our best guess
+      for reaching $T_{sd}$.
+
+      <br> <br> 
+      With IK, the
+      start state must reach some goal state in a single time step (if a multi-timestep trajectory is desired, then IK must be performed between
+      each waypoint in a pre-planned trajectory).
+      <br> <br> 
+    </section>
+
+    <section id="cv_theory">
+      <hr>
+      <h2>Computer Vision Theory</h2>
+      The first part of the CV pipeline is to create a binary map where blocks are white and all other
+      space is black.
+      <br> <br> 
+      
+      Given the lighting conditions of the lab, some experimentation indicated that we can identify blocks of all color 
+      on the table by thresholding based on whether the red channel values are less than 100 or greater than 
+      220. Had the lighting conditions 
+      or block colors been unpredictable, then I would have used more complex identification techniques.
+      <br> <br> 
+      An example of original image (left) converted to its thresholded result (right) is shown below.
+
+      <div class="row">
+        <div style="width: 8%; padding:0;" class="custom-column">
+        </div>
+        <div style="width: 40%; padding:0;" class="custom-column">
+          <img src="./original_blocks.png" class="img-fluid rounded">
+        </div>
+        <div style="width: 10%; padding:0;" class="custom-column">
+        </div>
+        <div style="width: 40%; padding:0;" class="custom-column">
+          <img src="./interm_thresh_blocks.png" class="img-fluid rounded" style="width: 65%;">
+        </div>
+        <div style="width: 2%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <br> <br> 
+      As seen above, all blocks can be identified, but there is background pixel activation 
+      from the tape on the table and some extremely bright or extremely dark areas 
+      of the table which are thresholded incorrectly. In order to smooth out these speckles such that our color-agnostic block 
+      threshold map only identifies valid blocks, I convolve the thresholded image with a 4x4 kernel of all 
+      1’s and re-threshold the resulting image to get a cleaner view of blocks identified while removing noise.
+      <br> <br> 
+      After image convolution and re-thresholding, we now have our desired binary map indicating the presence
+      of valid blocks. The next step is to resolve the exact center of each of these blocks such that the UR5e can
+      position its gripper accordingly to automatically pick the closest block.
+      <br> <br> 
+      In order to identify the centroids of all the blocks in the thresholded image, I used 
+      a Blob Bounding-Box approach since my image processing pipeline did not preserve the straight 
+      edges of some blocks while other blocks did not have well-defined edges/corners. This 
+      algorithm works by using a “grassfire approach” where given a thresholded image, all 
+      white pixels which are neighbored by other white pixels are recursively identified 
+      (ie in a grassfire neighboring grass is “burned” until there is no more neighboring grass).
+      Once all connected white pixels have been identified and this collective group of white 
+      pixels is surrounded by only black pixels, we have identified a blob. We can now 
+      find the minimal and maximal $x$ pixels as well as the minimal and maximal $y$ pixels of 
+      the blob which our grassfire identified and use these are the corners for the bounding 
+      box of the blob. Finally, choosing the center of this bounding box yields the centroid of the blob. 
+      <br> <br> 
+      The final result (for the same image, post-convolution and bounding-box algorithm) is shown below:
+      <div class="row">
+        <img src="./thresh_blocks.png" class="img-fluid rounded mx-auto" style="width: 37%;">
+      </div>
+      Given the location of the reference blocks in the image, the centroids identified can now 
+      be mapped to real-world $(x.y)$ for the UR5e's end-effector to reach.
+      <br> <br> 
+    </section>
+
+    <section id="hw_overview">
+      <hr>
+      <h2>Hardware Overview</h2>
+      <div class="row">
+        <img src="./board_overview.png" class="img-fluid rounded mx-auto" style="width: 37%;">
+      </div>
+      In order to convert intuitive user gestures to control the robot end-effector, 
+      the BNO055 IMU was used to collect gesture data. This IMU is capable of readings from the 
+      accelerometer (linear acceleration), gyroscope (angular acceleration), and magnetometer (magnetic orientation). 
+      This IMU also features on-board firmware to fuse sensor data together and report the orientation of the sensor 
+      in real time (reported in yaw, pitch, and roll Euler angles).
+      <br> <br> 
+      In order to communicate gesture data from the IMU into MATLAB, an Arduino 
+      NanoSense 33 BLE microcontroller was used. This Arduino can connect to MATLAB via
+      a USB connection once relevant firmware has been installed on the NanoSense.
+      <br> <br> 
+      After soldering leads onto the BNO055 and the NanoSense, I was able to plug them into a breadboard. 
+      Based on the specification, the default pin-mode select on the BNO055 indicates 
+      that the IMU communicates using I2C. To interface the IMU with the microcontroller, the following was needed:
+      <ul>
+        <li>
+          connected the NanoSense’s SCL (I2C clock pin) to the IMU’s SCL pin 
+        </li>
+        <li>
+          connected the NanoSense’s SDA (I2C Data Pin) to the IMU’s SDA pin.
+        </li>
+        <li>
+          connected the NanoSense’s 3.3V power supply to the BNO055’s VIN pin (which takes 3-5V and converts it down using an on-chip voltage regulator) 
+        </li>
+        <li>
+          connected the NanoSense’s GND to the BNO055’s GND
+        </li>
+      </ul>
+
+      In order to initiate the protocol to pick up the leftmost and topmost block
+      from valid list of blocks to pick, “Push button 1” is used. To use this push button, 
+      the NanoSense’s 3.3V power supply was connected to one lead, while the other lead was 
+      routed to the NanoSense’s analog pin A7. When the button is not pressed, the pins value is 
+      floating at an intermediate voltage (NanoSense reads this pin’s value as around 0.7 V), 
+      whereas when the button is pressed, the NanoSense reads this pin’s value is between 3.2-3.3V.
+      <br> <br> 
+      In order to command the end-effector to open its gripper (once the end-effector 
+      has been translated to a desirable position), “Push button 2” is used. To use 
+      this push button, the NanoSense’s 3.3V power supply was connected to one lead, 
+      while the other lead was routed to the NanoSense’s analog pin A6. When the button is not pressed, 
+      the pins value is floating at an intermediate voltage (NanoSense reads this pin’s value as around 0.7 V), 
+      whereas when the button is pressed, the NanoSense reads this pin’s value is between 3.2-3.3V.
+      <br> <br> 
+      In order to scale the magnitude with which IMU readings are converted to translation 
+      of the end-effector (in order to allow for a trade-off between coarse but fast 
+      end-effector movement as opposed to fine but slow end-effector movement), 
+      a potentiometer was used. To use this potentiometer, the NanoSense’s 3.3V power 
+      supply was connected to the input lead, while the GND lead was routed to the NanoSense’s GND pin. 
+      The middle pin of the potentiometer which reads the voltage divider value was routed to NanoSense’s 
+      analog pin A0. Based on how much the nob of the potentiometer is twisted, 
+      the NanoSense reads pin A0’s value is between 0-3.3V. This continuous range 
+      of values is then mapped to scale the sensitivity of which our IMU measurements 
+      should influence end-effector translation.
+
+      <br> <br> 
+
+    </section>
+
+    <section id="imu">
+      <hr>
+      <h2>IMU Mapping</h2>
+      The IMU reports the orientation using the following Euler angles:
+      <ul>
+        <li>Yaw: 	Angle between y-axis of the sensor and magnetic north, range from $[0, 2\pi]$ </li>
+        <li>Pitch:	Angle between z-axis and y-axis of the sensor, range from $[-\pi, \pi]$ </li>
+        <li>Roll:	Angle between z-axis and x-axis of the sensor, range from $[-\pi/2, \pi/2]$ </li>
+      </ul>
+
+      Initially, I was aiming to use accelerometer data and double integrate it to recover positional shifts of the IMU, 
+      such that moving the IMU in free space would translate to moving the UR5e end-effector in free space.
+      After playing with various double integration schemes, I realized that it was difficult to 
+      ignore IMU drift present when controlling the robot, which made recovering position quite noisy. 
+      <br> <br>
+
+      Instead, I pivoted to mapping the orientation readings of the IMU 
+      to displacements of the end-effector. In this new scheme, I aimed to
+      use the IMU as a “remote control” or “joystick” to maneuver the end-effector: 
+      once a default orientation of the IMU was chosen which corresponded to no changes in
+      $(x,y,z)$ of the end-effector, rotating/tilting the IMU along its axes such that 
+      the orientation angles would increase or decrease would be used to determine which direction(s) 
+      the end-effector should move. 
+      <br> <br>
+      After playing around with this scheme, I found that I could map 
+      Euler angle changes to changes in orientation of the IMU which felt 
+      “natural” in terms of corresponding to (x,y,z) displacements. In particular, I
+      chose the following mapping (each IMU orientation corresponds to no change, +/-X, +/-Y, or +/-Z as 
+      commanded to the inverse kinematics code which will be used by the ROS interface to move the end-effector): 
+      
+      <div class="row">
+        <img src="./remote_actions.png" class="img-fluid rounded mx-auto" style="width: 48%;">
+      </div>
+
+      In order to make sure the pipeline worked as expected, I needed to manipulate the sensor 
+      orientation values in a few ways. First, I needed to make sure that I only accept changes in
+       orientation from the “no change” position if orientations changed by over a sufficient activation threshold. 
+      <br> <br>
+      Meanwhile, since I was able to accurately manipulate pitch and roll of the IMU at the same 
+      time and extract their independent angle changes (ie superimpose +/- X with +/-Y), I was 
+      able to do X and Y displacements at the same time. However, since yaw angle changes with the
+      corresponding X and Y movements (since the angle between z-axis and x-axis of the sensor 
+      changes as roll and pitch change), I needed to ignore yaw angle changes if roll or pitch angle 
+      changes surpassed a sufficient angle threshold (or in other words, I only allow for Z displacement
+      if there was insufficient roll and pitch orientation change while there was sufficient yaw change).
+      <br> <br>
+      Furthermore, due to significant IMU drift in the yaw angle over time, I
+      integrated frequent updates to the yaw angle which corresponds to the “no change” 
+      position when the IMU is not being used. Otherwise, when there is insufficient roll and 
+      pitch angle changes but the yaw angle has drifted, the “no change” configuration could 
+      correspond to an incorrect z displacement! 
+      <br> <br>
+      Finally, given that each of the Euler angles were mapped to fixed ranges, 
+      sometimes slight changes in Euler angles close to the minimal/maximal boundary
+      would jump to maximal/minimal angle values, which would falsely suggest a very 
+      large change in orientation and transitively a very large change in displacement.
+      Thus, my code also handled these angle-measurement boundary cases such that measurement’s
+      relative to the no-change position had logical continuity when changes in 
+      IMU orientation were commanded.
+      <br> <br>
+      Altogether, when sufficient and valid changes in IMU orientation were received, 
+      I was able to update the (x,y,z) position I was tracking of the end-effector by 
+      multiplying the changes in orientation angles by a scaling factor which was 
+      controlled by the potentiometer (where the minimal displacement in 1 second 
+      can be 10mm and maximum displacement can be 70mm). I would then send these 
+      updated (x,y,z) positions to my inverse kinematics code using prior joint 
+      angles to help converge on a valid solution to obtain the desired position, 
+      and finally send these joint angles to the UR5e.
+
+      <br> <br>
+    </section>
+
+    <section id="code">
+      <hr>
+      <h2>Full Code + Demo</h2>
+      See MATLAB implementation in Github repository <a href="https://github.com/arnavinator/ur5e_block_builder/blob/main/ur5e_block_builder.m" target="_blank">here</a>. 
+      
+      <br> <br>
+      
+      <video width="640" height="360" controls style="display: block; margin: 0 auto;">
+        <source src="./ur5e_demo_fixed.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <br> <br>
+    </section>
+
+
+
+
+
+  
+  </div>
+
+  <!-- Back-to-Top button -->
+  <div id="backToTop" title="Go to top">  Back to Top ▲  </div>
+  <script>
+    // Get the button
+    const backToTopBtn = document.getElementById('backToTop');
+  
+    // 1) Show/hide button when scrolling
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        // If scrolled more than 300px, show the button
+        backToTopBtn.classList.add('show');
+        backToTopBtn.classList.remove('hide');
+      } else {
+        // Otherwise, hide it
+        backToTopBtn.classList.add('hide');
+        backToTopBtn.classList.remove('show');
+      }
+    });
+  
+    // // scroll to top on hover
+    // backToTopBtn.addEventListener('mouseenter', () => {
+    //   window.scrollTo({ top: 0, behavior: 'smooth' });
+    // });
+
+    // scroll to top on click
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+
+  <script>
+    fetch("/dropdown.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("dropdown-content").innerHTML = html;
+      });
+  </script>
+
+  
+</body>
+
+<footer class="footer-bar">
+  <div class="container text-center py-2">
+    <a
+      class="footer-link"
+      href="https://www.linkedin.com/in/arnav-srivastava/"
+      target="_blank"
+      rel="noopener"
+    >
+      <p class="fs-5">
+        Want to get in touch? Reach out to me on LinkedIn
+        <i class="bi bi-linkedin" style="font-size: 1.5rem;"></i>
+      </p>
+    </a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
