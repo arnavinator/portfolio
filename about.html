@@ -127,7 +127,7 @@
   </script>
 
   <script>
-    fetch("/dropdown.html")
+    fetch("./dropdown.html")
       .then(res => res.text())
       .then(html => {
         document.getElementById("dropdown-content").innerHTML = html;

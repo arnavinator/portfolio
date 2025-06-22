@@ -1,7 +1,7 @@
 /**
  * StrapDown.js - an on-the-fly markdown parser
  * Copyright (C) 2015, Lilian Besson. (GPLv3 Licensed)
- * http://lbesson.bitbucket.org/md/
+ * https://lbesson.bitbucket.org/md/
  * https://GitHub.com/Naereen/StrapDown.js
  * Version: 0.6
  */
