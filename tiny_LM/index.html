@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Arnav's Engineering Portfolio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../style.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],       // inline delimiters
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],    // display delimiters
+        packages: ['base', 'ams']                       // load AMS TeX extensions
+      },
+      options: {
+        // ensure MathJax processes dynamically‐added content
+        processHtmlClass: 'arithmatex',   
+        skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-sm navbar-dark">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-5">
+      <h2 class="nav-title">Arnav's Engineering Portfolio</h2>
+      <div class="navbar-nav">
+        <a class="nav-link" href="../index.html">Home</a>
+        <a class="nav-link" href="../about.html">About Me</a>
+
+        <div class="nav-item dropdown">
+          <!-- now a normal in-page link -->
+          <a
+            class="nav-link active"
+            href="../index.html#selected-work"
+            id="projectsDropdown"
+            aria-expanded="false"
+          >
+            Selected Work <span style="margin-left:1px; font-size:0.99em;">▾</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectsDropdown" id="dropdown-content"></ul>
+        </div>
+        
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero-section-proj">
+    <div class="textcontainer">
+      <h1 class="oswald-heading">
+        <u>Movie Dialog Language Model</u>
+      </h1>
+      <h3 class="oswald-heading"><span style="color: rgb(242, 242, 242);">
+        Tiny Transformer Models from scratch, trained on movie dialogs
+      </span></h3>
+
+      <h6><span style="color: rgb(242, 242, 242);">
+        <em>Skills: PyTorch, Tensor Algebra, Dataset Processing</em>
+      </span></h6>
+    </div>
+  </section>
+
+  <section class="textcontainer">
+    <h2 class="mb-4">Overview</h2>
+    
+    <div class="container">
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 5%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 45%; padding:0;" class="custom-column">
+          <figure class="figure">
+            <img src="/tiny_LM/tiny_LM_demo.gif" class="figure-img img-fluid rounded">
+            <figcaption class="figure-caption text-black ps-2">
+              <p class="mb-0" style="font-size: 0.72rem; color: #5f6063; font-family: Verdana">
+                <em>Fig. 1.</em> Sample (comical) output. <br>
+                After training on many movie conversations, the generated letters
+                demonstrates multiple recurring speakers and conforms to the English vocabulary (mostly). 
+                <br> The output is nonsensical, as expected given only self-supervised learning
+                and no policy fine-tuning / RLHF.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <div style="width: 5%; padding:0;" class="custom-column">
+        </div>
+        <div style="width: 35%; padding:0;" class="custom-column">
+          <figure class="figure">
+            <img src="/tiny_LM/transformer_arch_overview.png" class="figure-img img-fluid rounded">
+          </figure>
+        </div>
+        <div style="width: 5%; padding:0;" class="custom-column">
+        </div>
+
+      </div>
+    </div>
+
+    In this project, I created various small Transformer architectures from scratch (for pedagological purposes), and evaluated their performance on 
+    on the <a href="https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html" target="_blank">Cornell Movie Dialogs Corpus dataset</a> (comparing model size,
+    model loss, and inference latency on my M2 Macbook Air).
+    <br><br>
+
+    Throughout the architecture exploration process, this project aims to create a good <em>Movie Dialog Language Model</em> 
+    which can <strong>predict/generate movie-like conversations</strong> (one character at a time, from a learned multinomial distribution of character probabilities). 
+    By predicting one letter at a time, dialog can be generated (biased by a context window of previous characters).
+    <br><br>
+
+    To demonstrate my PyTorch skills (and for my own pedagogy), I placed an emphasis on coding all key architectures from scratch in PyTorch. As part of my architectural search,
+    I explore tradeoffs between the 
+    <span style="color: rgb(195, 23, 23);"> <strong>traditional Transformer architecture</strong> </span>
+    and the 
+      <span style="color: rgb(28, 31, 215);"> <strong>DeepSeek-V3/DeepSeek-R1 architecture</strong> </span>
+    (which took the public by storm in Jan. 2025):
+
+    <ul>
+      <li>
+        <u><em>Self-Attention Mechanism:</em></u> 
+          <ul>
+            <li>
+                <span style="color: rgb(195, 23, 23);"> Traditional </span> Decoder-Only Multi-Head Self-Attention <strong>(MHA)</strong>
+            </li>
+            <li>
+                  <span style="color: rgb(28, 31, 215);"> DeepSeek-V3/R1 Decoder-Only Multi-Head Latent Self-Attention </span> <strong>(MLA)</strong>
+            </li>
+          </ul>
+      </li>
+      <li>
+        <u><em>Feed-Forward Network Mechanism:</em></u> 
+          <ul>
+            <li>
+            <span style="color: rgb(195, 23, 23);"> Traditional </span> Feed-Forward Network <strong>(FFN)</strong>
+            </li>
+            <li>
+            <span style="color: rgb(28, 31, 215);"> DeepSeek-V3/R1 </span> Mixture-of-Experts Feed-Forward Network <strong>(MoE FFN)</strong>
+            </li>
+          </ul>
+      </li>
+      <li>
+        <u><em>Token Positional Embeddings:</em></u>
+          <ul>
+            <li>
+            <span style="color: rgb(195, 23, 23);"> Traditional </span> Learned Positional Embeddings
+            </li>
+            <li>
+            <span style="color: rgb(28, 31, 215);"> DeepSeek-V3/R1 </span> Rotary Positional Embeddings <strong>(RoPE)</strong>
+            </li>
+          </ul>
+      </li>
+      <li>
+        <u><em>Context Length:</em></u> how many previous tokens (letters, in this case) the model considers to bias the probabilities for the next token (letter)
+      </li>
+      <li>
+        <u><em>Number of Transformer Blocks:</em></u> how many times a Transformer block (Self-Attention + Feed-Forward Network) are repeated in the model
+      </li>
+    </ul>
+
+    A preview of the results is below, with further explanations in <a href="#results">Architectural Exploration Results</a>.
+    <div class="container">
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 5%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 90%; padding:0;" class="custom-column">
+          <figure class="figure">
+            <img src="/tiny_LM/arch_comp.png" class="figure-img img-fluid rounded">
+          </figure>
+        </div>
+
+        <div style="width: 5%; padding:0;" class="custom-column">
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+  
+  <div class="textcontainer">
+
+    <section class="table-of-contents">
+      <hr>
+
+      <h2 class="mb-3">Table of Contents</h2>
+      <ul>
+        <li><a href="#results">Architectural Exploration Results</a></li>
+        <li><a href="#theory_overview">Theory Overview</a></li>
+        <ul>
+          <li><a href="#sa_theory">Self-Attention (<strong>SA</strong>)</a></li>
+          <li><a href="#pos_theory">Positional Encoding (<strong>Learned</strong> and <strong>RoPE</strong>)</a></li>
+          <li><a href="#mha_theory">Multi-Head Self-Attention (<strong>MHA</strong>)</a></li>
+          <li><a href="#mla_theory">Multi-Head Latent Self-Attention (<strong>MLA</strong>)</a></li>
+          <li><a href="#ffn_theory">Feed-Forward Network (<strong>FFN</strong>)</a></li>
+          <li><a href="#moe_theory">Feed-Forward Network Mixture of Experts (<strong>MoE FFN</strong>)</a></li>
+        </ul>
+        <li><a href="#code">Full Code</a></li>
+      </ul>
+      <br> <br> 
+    </section>
+
+
+    <section id="results">
+      <hr>
+      <h2>Architectural Exploration Results</h2>
+
+      Based off of all the theory sections above, my Architectural Exploration has two parts:
+      <ol>
+        <li>
+          Determine the SOTA positional embedding for Transformer Self-Attention.
+        </li>
+        <li>
+          Explores the tradeoffs between transformer architectural components between the Vanilla and DeepSeek architectures.
+        </li>
+      </ol>
+      The final best performing model is in a Python file, with post-training weights 
+      available for inference testing. All experiments are conducted within a separate Jupyter Notbook. Please see <a href="#code">Full Code</a>.
+      <br><br>
+      
+      <h5>Part 1:</h5>
+      The following architecture attributes were held constant for the experiment below:
+      <ul>
+        <li>
+          $6$ Decoder-only MHA Transformer Blocks
+        </li>
+        <li>
+          $6$ Attention Heads per Transformer Block
+        </li>
+        <li>
+          Embedding Dimension: $60$
+        </li>
+        <li>
+          Context Length: $10$ tokens
+        </li>
+        <li>
+          Model Size: $0.27$ million parameters
+        </li>
+      </ul>
+
+      <div class="container">
+        <div class="row gx-0 mb-4 mt-4 align-items-center">
+          <div style="width: 30%; padding:0;" class="custom-column">
+          </div>
+
+          <div style="width: 40%; padding:0;" class="custom-column">
+            <figure class="figure">
+              <img src="/tiny_LM/pos_emb_comp.png" class="figure-img img-fluid rounded">
+            </figure>
+          </div>
+
+          <div style="width: 30%; padding:0;" class="custom-column">
+          </div>
+
+        </div>
+      </div>
+      As shown in the table below, a learned position embedding table and RoPE at the begining lead to a lower validation loss than no positional embedding,
+      demonstrating that having an indication of token indices easily provides value to model learning.
+      <br>
+      The next extension would be to have a positional encoding for every head in every subblock of MHA (not just before the first Transformer block). Since RoPE is cheaper 
+      on memory than a learned position embedding table (in-place multiplication by constants consumes less memory than a much larger table for every head in every subblock),
+      I then repeat the RoPE application for for every head in every subblock of MHA. The resulting architecture leads to a further signficant decrease in 
+      validation loss of the model.  
+      <br><br>
+
+      <h5>Part 2:</h5>
+      Now that I've demonstrated that the SOTA positional encoding approach is in fact the best performing, I wanted to explore other architectural tradeoffs, in particularly
+      with respect to Vanilla Transformer design versus DeepSeek Transformer design.
+      
+      The following architecture attributes were held constant for the experiment below:
+      <ul>
+        <li>
+          $6$ Attention Heads per Transformer Block
+        </li>
+        <li>
+          RoPE in every Attention Head of every Transformer Block
+        </li>
+        <li>
+          Embedding Dimension: $96$ (scaled up from Part 1 for better performance)
+        </li>
+      </ul>
+
+      <div class="container">
+        <div class="row gx-0 mb-4 mt-4 align-items-center">
+          <div style="width: 3%; padding:0;" class="custom-column">
+          </div>
+
+          <div style="width: 94%; padding:0;" class="custom-column">
+            <figure class="figure">
+              <img src="/tiny_LM/arch_comp.png" class="figure-img img-fluid rounded">
+            </figure>
+          </div>
+
+          <div style="width: 3%; padding:0;" class="custom-column">
+          </div>
+
+        </div>
+      </div>
+
+      The <u>first row</u> shows the base Vanilla Transformer infrastructure, with SOTA RoPE and scaled up from the Part 1 experiments.
+      <br>
+      The <u>second row</u> takes the same exact architecture, but applies some PyTorch changes to make inference <u>25x</u> faster. This was done by:
+      <ul>
+        <li>
+          One fused QKV ($d_{embd} \rightarrow 3 \cdot n \cdot d_{head_size}$) Linear Layers for an entire MHA instance instead of $3 \cdot n \cdot (d_{embd} \rightarrow d_{head})$ 
+          Linear Layers for $n$ Attention Heads and $3$ transformations (Q, K, V) in the MHA... less memory BW, less kernel launches
+        </li>
+        <li>
+          Vectorize the RoPE application: do element-wise matrix multiplication to apply RoPE instead of doing many matrix-matrix 
+          multiplications... less compute
+        </li>
+        <li>
+          Register Buffer a boolean Decoder Attention mask (instead of buffering a floating one and then 
+          computing the boolean one each forward pass)... less compute
+        </li>
+      </ul>
+      The <u>third row</u> scales up the same Vanilla architecture's context window and # of MHA Blocks (adding about 0.1M params) for further performance improvement.
+      <br>
+      The <u>fourth row</u> implements a Hybrid Architecture: DeepSeek's MLA instead of MHA (reducing about 0.2M params compared to Vanilla) with Vanilla FFN.
+      The architecture parameters themselves are not changed.
+      <ul>
+        <li>
+          Surprisingly, MLA is not as successful at learning as MHA. It appears that the compression/decompression optimization
+          slightly hurts self-attention heads' ability to learn data patterns.
+        </li>
+        <li>
+          Nevertheless, we see a <u>30% inference speed up</u>. Since inference time is measured on my CPU with no special KV caching, this 
+          speedup may be more pronounced given KV caching enabled inference measurements for Vanilla and Hybrid Architectures.
+        </li>
+      </ul>
+      The <u>fifth row</u> implements a Hybrid Architecture: DeepSeek's MoE FFN instead of Vanilla FFN (adding about 6M params) with Vanilla MHA.
+      The architecture parameters themselves are not changed.
+      <ul>
+        <li>
+          While about 2x more parameters are now activated <em>per token</em>, the performance gain is clear: training experts which are
+          context dependents leads to a notable validation loss reduction.  
+        </li>
+        <li>
+          We see about a <u>40% inference slowdown</u> on CPU compared to the Vanilla architecture, which could likely be reduced 
+          on a GPU with optimized data movement.
+        </li>
+      </ul>
+      The <u>sixth row</u> implements the full DeepSeek Architecture: DeepSeek's MLA and MoE FFN.
+      <ul>
+        <li>
+          With the same architecture parameters for the Vanilla and DeepSeek architectures, the DeepSeek architecture ends up 
+          performing slightly worse (MLA hurts loss more than Moe FFN helps, while MoE FFN hurts latency more than MLA helps). 
+          Again, it is likely a different story on an optimized GPU with KV caching.
+        </li>
+      </ul>
+      <br>
+
+      Based on my experiments on my M2 CPU, my experiments indicated that the most performant model on my dataset would be 
+      the <u>Hybrid Architecture of Vanilla MHA coupled with DeepSeek's MoE FFN</u>. I therefore scaled up the context window to be even 
+      larger and used this hybrid architecture model for my final model, with a validation loss of 1.27.
+
+      <br> <br> 
+    </section>
+
+
+    <section id="theory_overview">
+      <hr>
+      <h2>Theory Overview</h2>
+      All Large Language Models (LLMs) are next token(s) predictors, based on a context window number of previous tokens provided to the model.
+      <br>
+      We use a letter → token embedding (vector) scheme, and generate the next token by sampling a trained multinomial probability 
+      distribution (converting logits to probabilities by using Softmax). 
+      <br>
+      The Transformer architecture has become particularly popular over the last few years due to its strong ability to diffuse information 
+      gradually and minimize cross-entropy across long context windows. In decoder-only Transformers, such as those used in autoregressive language models, Self-Attention serves
+      as a key mechanism for tokens to communicate and aggregate information from previous tokens in a sequence. 
+      This allows the model to capture dependencies in a data-dependent manner while ensuring causality through masking.
+      <br>
+      <br> <br> 
+    </section>
+
+    <section id="sa_theory">
+      <hr>
+      <h2>Self-Attention (SA)</h2>
+
+      Self-Attention computes a weighted average of value vectors $V$, where weights are derived from the similarity between query $Q$ and key $K$ vectors.
+
+      Given the input embedding matrix $X \in \mathbb{R}^{n \times d_{\text{model}}}$ (for sequence length $n$ and model dimension $d_{\text{model}}$), the queries, keys, and values are generated via linear projections:
+      $$Q = X W^Q, \quad K = X W^K, \quad V = X W^V$$
+      where $W^Q, W^K, W^V \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}$.
+
+      Given input embeddings packed into matrices $Q$, $K$, and $V$ (all in $\mathbb{R}^{n \times d_k}$ for sequence length $n$ and dimension $d_k$), the attention output is:
+      $$
+      \text{Attention}(Q, K, V) = \mathrm{Softmax} \left(\frac{QK^T}{\sqrt{d_k}}\right) V
+      $$
+      Here, the Softmax is applied row-wise, and the scaling by $\sqrt{d_k}$ stabilizes the variance of the input embedding across the Attention mechanism (thus preventing Softmax to not saturate too much and suffer from vanishing gradients).
+      <br> <br>
+
+      In the decoder-only setting, to enforce autoregression (preventing tokens from attending to future tokens), a 
+      causal mask is applied before the softmax: the upper triangular part of $QK^T$ (excluding the diagonal) is set to $-\infty$, ensuring attention weights for future positions are zero.
+      <br> <br>
+
+      Self-attention acts as a communication mechanism among tokens:
+      <ul>
+        <li>
+          Each token $x \in X$ generates a <emph>query</emph> $q \in Q$ ("What am I looking for?") and a <emph>key</emph> $k \in K$ ("What do I contain?").
+        </li>
+        <li>
+          The dot product $q \cdot k$ measures relevance; high values indicate strong interaction.
+        </li>
+        <li>
+          After scaling and softmax, these become weights for aggregating <emph>values</emph> $v \in V$ from relevant tokens.
+        </li>
+        <li>
+          Thus, a token at position $t$, its query interacts with keys from positions $1$ to $t$, forming a <u>weighted average</u> of past values.
+        </li>
+      </ul>
+
+      For example, in character-level modeling, a token might query for consonants in earlier positions, with keys responding based on their
+      content and position. The resulting weights create a data-dependent focus, allowing the model to "learn" contextual relationships.
+      <br> <br> 
+    </section>
+
+    <section id="pos_theory">
+      <hr>
+      <h2>Positional Encoding (Learned and RoPE)</h2>
+      In transformers, position embeddings are crucial for incorporating token order information into the model, as SA is otherwise permutation-invariant. 
+      In a nanoGPT-like setup, learned position embeddings are added once to token embeddings and propagated through multiple transformer blocks, 
+      where their primary impact occurs during the dot product in SA: a large dot product value between $k_a$ (key of token index $a$) and 
+      query $q_b$ (query of token index $b$) indicates strong interaction, requiring position information about $k_a$ and $q_b$ for 
+      effective attention. Without position encodings, dot products remain identical regardless of token proximity in the sequence, 
+      but with them, keys at positions 0 and 100 interact differently with a query at position 120.
+      <br><br>
+
+      SOTA LLMs apply position embeddings within <em>every</em> transformer block instead of just at once before all transformer blocks.
+      However, SOTA LLMs use Rotary Position Embeddings (RoPE) instead of learned tables, and apply RoPE only to queries ($Q \leftarrow RoPE(Q)$) 
+      and keys ($K \leftarrow RoPE(K)$), while no position embeddings are applied to values $V$.
+      <br>
+      In RoPE, rather than adding embeddings, the input embedding is multiplied by a rotation matrix corresponding to token index $m$.
+      <br><br>
+
+      Our main desire with position embeddings is to have some encoding appended the end of a dot-product that says 
+      how far away tokens $m$ and $n$ are. There should be a unique encoding for each possible distance. RoPE creates this unique encoding
+      and applies it to the SA dot-product for us! 
+      <br><br>
+
+      RoPE directly assigns each token a unique position embedding that encodes relative distances between tokens, 
+      as desired from a learned embedding table (but without needing to learn). 
+      To implement, consider a complex number $x_m = |x_m| e^{i\phi_m}$. Note that the dot product of $x_m$ and $x_n$ is a function of $m - n$
+      (the distance between token indices as desired): for 
+      complex representations, $x_m \cdot x_n = \Re[x_m x_n^* e^{i(m-n)\theta}]$. 
+      <br>
+      In reality, $x_m$ and $x_n$ are higher dimension real tensors, not complex numbers. However, since a complex number can be viewed as a 
+      two-dimensional vector, RoPE breaks a tensor into pairs and treats each pair as a complex number. Then, multiplication by $e^{i\theta}$ equates to 
+      applying a 2D rotation matrix $\begin{pmatrix} \cos \theta & -\sin \theta \\ \sin \theta & \cos \theta \end{pmatrix}$. 
+      <br>
+      For a $d$-dimensional vector, RoPE uses a block-diagonal matrix $R^d_{\Theta, m}$ with 2x2 rotation blocks for each pair, 
+      where $\theta_i = 10000^{-2(i-1)/d}$ for $i \in [1, 2, \dots, d/2]$, and frequencies decrease logarithmically with $i$.
+      <br>
+      $$
+      R^d_{\Theta, m} = \begin{pmatrix}
+      \cos m\theta_1 & -\sin m\theta_1 & 0 & 0 & \cdots & 0 & 0 \\
+      \sin m\theta_1 & \cos m\theta_1 & 0 & 0 & \cdots & 0 & 0 \\
+      0 & 0 & \cos m\theta_2 & -\sin m\theta_2 & \cdots & 0 & 0 \\
+      0 & 0 & \sin m\theta_2 & \cos m\theta_2 & \cdots & 0 & 0 \\
+      \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+      0 & 0 & 0 & 0 & \cdots & \cos m\theta_{d/2} & -\sin m\theta_{d/2} \\
+      0 & 0 & 0 & 0 & \cdots & \sin m\theta_{d/2} & \cos m\theta_{d/2}
+      \end{pmatrix}
+      $$
+
+      RoPE allocates multiple 2D planes, each with its own frequency: after the dot product, the model observes a spectrum of cos/sin values scaling the original dot product variably; 
+      tokens $m$ and $n$ have a unique spectrum across pairs, enabling the model to associate these distance signatures 
+      with actual distances and learn to weight different "frequency channels" in attention heads. 
+
+      RoPE is preferred over learned tables for several reasons. 
+      <br>
+      <ul>
+        <li>
+          First, it encodes <strong>relative distances by construction</strong>: while sinusoidal 
+          or learned absolute embeddings require the model to learn comparisons of positional vectors to infer distances, RoPE's rotations 
+          directly encode relative displacement, making the dot product between rotated vectors at positions $i$ and $j$ proportional to a 
+          function of $(j - i)$, allowing the attention score to inherently "know" their distance without extra parameters or learning. 
+        </li>
+        <li>
+          Second, it enables <strong>extrapolation to longer sequences</strong>: learned tables or fixed sinusoids are limited to the 
+          maximum position seen in training, but rotations by angle $\theta_i$ can be applied to any $i$, yielding meaningful relative angles
+          beyond training lengths. 
+        </li>
+        <li>
+          Third, it is <strong>parameter-efficient</strong>: no per-position parameters are needed, only a rotation generator 
+          using sin/cos functions shared across layers and heads, eliminating the need for a position embedding table 
+          up to the maximum number of tokens.
+        </li>
+      </ul>
+      <br> <br> 
+    </section>
+
+    <section id="mha_theory">
+      <hr>
+      <h2>Multi-Head Self-Attention (MHA)</h2>
+      Multi-Head Self-Attention (<strong>MHA</strong>) extends single-head attention by performing it in parallel across $h$ heads, allowing the model to jointly attend to 
+      information from different representation subspaces. Conceptually, this can be viewed as slicing the input embedding dimensions into $h$ subspaces of 
+      size $d_k = d_{\text{model}} / h$, processing each independently, and then concatenating the results back.
+      <br>
+      Given the input $X \in \mathbb{R}^{n \times d_{\text{model}}}$, for each head $i = 1, \dots, h$:
+      $$
+      Q_i = X W^Q_i, \quad K_i = X W^K_i, \quad V_i = X W^V_i
+      $$
+      where $W^Q_i, W^K_i, W^V_i \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}$.
+
+      However, following the SOTA positional encoding approach, RoPE is actually applied to query and keys before SA's dot product (in every transformer block). Thus, we have
+      $$
+      Q_i = \text{RoPE}(X W^Q_i), \quad K_i = \text{RoPE}(X W^K_i), \quad V_i = X W^V_i
+      $$
+
+      Then, each head computes:
+      $$
+      \text{head}_i = \text{Attention}(Q_i, K_i, V_i) = \mathrm{Softmax}\left(\frac{Q_i K_i^T}{\sqrt{d_k}}\right) V_i
+      $$
+      The multi-head output is:
+      $$\text{MHA}(X) = \text{Concat}(\text{head}_1, \dots, \text{head}_h)$$
+      
+      This parallelism enables diverse attention patterns and more "localized" learning.
+      
+      <br> <br> 
+    </section>
+
+    <section id="mla_theory">
+      <hr>
+      <h2>Multi-Head Latent Self-Attention (MLA)</h2>
+      
+      Multi-Head Latent Attention (MLA), used by DeepSeek-V3, replaces traditional MHA with a low-rank joint compression approach for keys and values
+      to reduce the KV cache during inference while maintaining performance.
+      <br>
+
+      Let the $t$-th token $x_t \in X$ have dim $d_{\text{model}}$ (similar to the MHA setup). 
+      <br>
+
+      Let there be $n_h$ attention heads each with $d_h$ head size (usually $d_{\text{model}} = n_h \cdot d_h$ if we are not trying to upscale/downscale embedding dim for next attention block).
+      <br>
+
+      First, we perform computations to cache compressed tensors (instead of caching a full length $k_{t,i} \in K_i$ and $v_{t,i} \in V_i$ for 
+      token $x_t \in X$ and attention head $i \in n_h$):
+      <ul>
+        <li>
+          We apply $W^{DKV}: d_{\text{model}} \rightarrow d_c \ll d_{\text{model}}$ to $x_t$:
+          $$c_t^{KV} = W^{DKV} x_t$$
+        </li>
+        <li>
+          We apply $W^{KR}: d_{\text{model}} \rightarrow d_R \ll d_{\text{model}}$ to $x_t$, and then apply RoPE to the result. 
+          $$k_t^R = \text{RoPE}(W^{KR} x_t)$$
+        </li>
+      </ul>
+      <br>
+
+      Next, we upscale (decompress) these compressed cache values to actually generate the key $k_{t,i}$ and value $v_{t,i}$.
+      <br>
+      To generate value $v_{t,i}$, we apply $W^{UV}: d_c \rightarrow d_{\text{model}}$ to $c_t^{KV}$ and then split the result:
+      $$v_t^C = W^{UV} c_t^{KV}$$
+      $$[v_{t,1}^C, \dots, v_{t,n_h}^C] = v_t^C$$
+
+      To generate key $k_{t,i}$, we apply $W^{UK}: d_c \rightarrow d_e$ to $c_t^{KV}$ such that $d_e + n_h d_R =  d_{\text{model}}$, split the result, 
+      and then concatenate each head's key with $k_t^R$ which was cached: 
+      $$k_t^C = W^{UK} c_t^{KV}$$
+      $$[k_{t,1}^C, \dots, k_{t,n_h}^C] = k_t^C$$
+      $$k_{t,i} = [k_{t,i}^C, k_t^R]$$
+
+      Whereas traditionally we apply RoPE to the entire Key/Query (and thus "rotate" the entire Key/Query) before the SA dot-product, DeepSeek takes a new approach in this case:
+      we apply RoPE to only a small part of the final Key/Query and have this positional ID shared across each attention head's key candidate, such that only some (instead of all) of the 
+      Key-Query dot product has positional alignment.
+      <br>
+      This reduces the number of RoPE values calculated (less in-place multiplications due to smaller effective dimension for RoPE as well and reuse across attention heads).
+      <br><br>
+
+      To generate query $q_{t,i}$, queries are compressed and decompressed (although this doesn't provide any KV caching benefit, is more for completeness).
+      $$c_t^Q = W^{DQ} x_t$$
+      $$[q_{t,1}^C, q_{t,2}^C, \dots, q_{t,n_h}^C] = q_t^C = W^{UQ} c_t^Q $$
+      $$[q_{t,1}^R, q_{t,2}^R, \dots, q_{t,n_h}^R] = q_t^R = \text{RoPE}(W^{QR} x_t)$$
+      $$q_{t,i} = [q_{t,i}^C, q_{t,i}^R]$$
+      where 
+      <ul>
+        <li>
+          $W^{DQ}: d_{\text{model}} \rightarrow d_c \ll d_{\text{model}}$
+        </li>
+        <li>
+          $W^{UQ}: d_c \rightarrow d_e$
+        </li>
+        <li>
+          $W^{QR}: d_{\text{model}} \rightarrow n_h d_R$ (such that $d_e + n_h d_R = d_{\text{model}}$)
+        </li>
+      </ul>
+
+      For queries, RoPE was fed dim $n_h d_R$ for token $x_t$ which is then split to each attention head (instead of $d_R$ RoPE which is shared is for keys in each attention head).
+      One possible explanation for this change would be that since we are appending a unique part of the query position embedding to each attention head, each attention head's query
+      positional encoding has slightly different phase (even for the same token index), perhaps this encourages each attention head to learn different representations
+      (although that is already partially encouraged organically in multi-head attention by virtue of having multiple heads).
+      <br> <br> 
+
+      Overall, MLA strives to reduce KV caching, allowing for faster significant memory savings while still having meaningfully expressive self-attention (or allowing 
+      for longer context windows within a shared memory footprint).
+      <br><br>
+    </section>
+
+    <section id="ffn_theory">
+      <hr>
+      <h2>Feed-Forward Network (FFN)</h2>
+
+      In the Transformer architecture, immediately after SA, a Position-wise Feed-Forward Network (<strong>FFN</strong>) 
+      applied independently to each token representation.
+
+      Let $x_t \in \mathbb{R}^{d_{model}}$ be the input vector for a token 
+      after the SA sub-layer (can be SA, MHA, or MLA). The feed-forward network 
+      is a two-layer fully connected network with a non-linearity:
+
+      $$
+      \text{FFN}(x_t) = W_2 \, \text{ReLU} \left( W_1 x_t + b_1 \right) + b_2,
+      $$
+
+      where
+      <ul>
+        <li>
+          $W_1 \in \mathbb{R}^{d_{ff} \times d_{model}}$, $b_1 \in \mathbb{R}^{d_{ff}}$
+        </li>
+        <li>
+          $W_2 \in \mathbb{R}^{d_{model} \times d_{ff}}$, $b_2 \in \mathbb{R}^{d_{model}}$
+        </li>
+      </ul>
+
+
+      The hidden dimension $d_{ff}$ is typically much larger than $d_{model}$ (I use 4x larger).
+      <br>
+
+      While the attention mechanism enables contextual mixing of token information,
+      the feed-forward networks allow for <em>non-linear transformations</em> of each
+      token embedding, improving representational power and enabling the model to
+      capture higher-level abstractions by "thinking more" about the output of SA in each Transformer block.
+      Combined with residual connections and layer normalization, FFNs enhance the model's capacity to 
+      capture complex transformations beyond SA mechanisms.
+      <br> <br> 
+    </section>
+
+    <section id="moe_theory">
+      <hr>
+      <h2>Feed-Forward Network Mixture of Experts (MoE FFN)</h2>
+      Utlized by DeepSeek-V3, Mixture of Experts Feed Forward Networks (<strong>MoE FFN</strong>) which replaces traditional FFNs in transformers.
+      <br>
+      Once again, let $x_t \in \mathbb{R}^{d_{model}}$ be the input to MoE FFN, which is $t$-th token output of SA, MHA, or MLA.
+      MoE employs $N_s$ <strong>shared experts</strong> that always contribute to the FFN output and $N_r$ <strong>routed experts</strong> 
+      where only $K_r$ out of $N_r$ contribute per token. 
+      The output is computed as 
+      $$
+      h_t = u_t + \sum_{i=1}^{N_s} \mathrm{FFN}_i^{(s)}(u_t) + \sum_{i=1}^{N_r} g_{i,t} \mathrm{FFN}_i^{(r)}(u_t)
+      $$
+
+      where the decision of which $K_r$ routed experts are chosen is as follows:
+      $$
+      s_{i,t} = \sigma \left( u_t^T e_i \right) 
+      $$
+
+      $$
+      g'_{i,t} = \begin{cases} s_{i,t} & s_{i,t} \in \mathrm{Topk}\left(\{s_{j,t}\mid 1 \leq j \leq N_r\}, K_r\right), \\ 0, & \mathrm{otherwise}, \end{cases}
+      $$
+
+      $$
+      g_{i,t} = \frac{g'_{i,t}}{\sum_{j=1}^{N_r} g'_{j,t}} 
+      $$
+
+      The selection of routed experts involves computing $\sigma(u_t \cdot e_i)$, where the token-to-routed-expert affinity is the dot product between $u_t$ 
+      and a learned <strong>centroid vector</strong> $e_i$ associated with routed expert $i$ (with $N_r$ different $e_i$). 
+      This centroid vector specializes to detect the region (centroid) of the feature space handled by expert $i$. 
+      <br>
+      Next, $g_{i,t}$ is created by choosing the top $K_r$ token-to-routed-expert affinities and normalizing them to decide how much
+      each routed expert contributes to $h_t$.
+      <br>
+
+      For MoE models, a common pitfall is that some experts can be chosen much more frequently than others, leading to "unbalanced expert load" 
+      that can lead to routing collapse (thus diminishing the benefit of experts becoming specialized based on 
+      token-to-routed-expert affinities). In order to combat this, DeepSeek-V3 uses <em>auxiliary-loss-free load balancing</em>. 
+      Only during most of model training, $N_r$ different bias term are tracked, where $b_i$ is chosen for expert $i$. Then, 
+      $$
+      g'_{i,t} = \begin{cases} s_{i,t} & s_{i,t} + b_i \in \mathrm{Topk}\left(\{s_{j,t} + b_j \mid 1 \leq j \leq N_r\}, K_r\right), \\ 0, & \mathrm{otherwise}. \end{cases}
+      $$
+      Note that $b_i$ is only used to influece the $\mathrm{Topk}$ filtering, but the original $s_{i,t}$ value is still used for calculating the affinity.
+      <br>
+
+      At the end of each training iteration, $b_i$ is decreased by $\gamma$ if its corresponding expert is overloaded and increased 
+      by $\gamma$ if its corresponding expert is underloaded, where $\gamma$ is a hyper-parameter called <em>bias update speed</em>. 
+      Through the dynamic adjustment, DeepSeek-V3 keeps balanced expert load during training and achieves good performance.
+      <br>
+
+      Finally, DeepSeek-V3 also adds a <em>complementary sequence-wise auxiliary loss</em> to also influence good load balancing. 
+      However, since DeepSeek mostly relies on auxiliary-loss-free load balancing, the hyperparameter for this loss term is 
+      kept very small.
+      
+      $$
+      \mathcal{L}_{\mathrm{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i ,
+      $$
+
+      $$
+      f_i = \frac{N_r}{K_r T} \sum_{t=1}^T 1 \left( s_{i,t} \in \mathrm{Topk}\left(\{s_{j,t}\mid 1 \leq j \leq N_r\}, K_r\right) \right) ,
+      $$
+
+      $$
+      s'_{i,t} = \frac{s_{i,t}}{\sum_{j=1}^{N_r} s_{j,t}} ,
+      $$
+
+      $$
+      P_i = \frac{1}{T} \sum_{t=1}^T s'_{i,t}
+      $$
+      where $f_i$ measures how frequently expert $i$ is used in the top‑$K$ set, and $P_i$ measures how much probability mass it gets overall.
+      <br>
+      Thus, if $f_i P_i$ is large, ie if an expert gets picked on too many tokens and has too much of the total weight, we pay a penalty.
+      <br> <br> 
+    </section>
+    
+
+    <section id="code">
+      <hr>
+      <h2>Full Code</h2>
+      See MATLAB implementation in Github repository <a href="https://github.com/arnavinator/ur5e_block_builder/blob/main/ur5e_block_builder.m" target="_blank">here</a>. 
+
+      To see the step-by-step model architecture development and architecture experiments, see notebook 
+      <em><a href="https://github.com/arnavinator/movie_convo_transformer/blob/main/my_gpt.ipynb" target="_blank">my_gpt.ipynb</a></em>. 
+      <br>
+
+      To train the final (best) model architecture from scratch, see 
+      <em><a href="https://github.com/arnavinator/movie_convo_transformer/blob/main/my_gpt_train.py" target="_blank">my_gpt_train.py</a></em>.
+      <br>
+
+      To run inference with the final pretrained model weights, see      
+      <em><a href="https://github.com/arnavinator/movie_convo_transformer/blob/main/my_gpt_inference.py" target="_blank">my_gpt_inference.py</a></em>.
+      <br><br>
+            
+      Finally, a big thank you to Andrej Karpathy's <a href="https://youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ&si=oB53G3BJ0vYftPZL" target="_blank">Neural Network series</a>
+    for strengthening my PyTorch foundations (used in many of my portfolio projects), reinforcing my passion for neural architectural search,
+    and empowering me to dive deep into efficient model architectures (Transformers and beyond).
+
+      <br> <br>
+    </section>
+
+
+  
+  </div>
+
+  <!-- Back-to-Top button -->
+  <div id="backToTop" title="Go to top">  Back to Top ▲  </div>
+  <script>
+    // Get the button
+    const backToTopBtn = document.getElementById('backToTop');
+  
+    // 1) Show/hide button when scrolling
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        // If scrolled more than 300px, show the button
+        backToTopBtn.classList.add('show');
+        backToTopBtn.classList.remove('hide');
+      } else {
+        // Otherwise, hide it
+        backToTopBtn.classList.add('hide');
+        backToTopBtn.classList.remove('show');
+      }
+    });
+  
+    // // scroll to top on hover
+    // backToTopBtn.addEventListener('mouseenter', () => {
+    //   window.scrollTo({ top: 0, behavior: 'smooth' });
+    // });
+
+    // scroll to top on click
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+
+  <script>
+    fetch("../dropdown.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("dropdown-content").innerHTML = html;
+      });
+  </script>
+
+  
+</body>
+
+<footer class="footer-bar">
+  <div class="container text-center py-2">
+    <a
+      class="footer-link"
+      href="https://www.linkedin.com/in/arnav-srivastava/"
+      target="_blank"
+      rel="noopener"
+    >
+      <p class="fs-5">
+        Want to get in touch? Reach out to me on LinkedIn
+        <i class="bi bi-linkedin" style="font-size: 1.5rem;"></i>
+      </p>
+    </a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>

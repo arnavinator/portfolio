@@ -58,7 +58,8 @@
 
           <p>
             <strong>
-              This website showcases some of my recent projects in <u>machine learning</u> and <u>robotics</u>.
+              This website showcases some of my recent projects in <u>machine learning</u> and <u>robotics</u>, 
+              with an <em>emphasis on implementing algorithms <u>from scratch</u></em>.
             </strong>
           </p>
           <!-- mb-1 set bottom-margin to 0.25rem (instead of the default 1rem).  -->
@@ -111,69 +112,53 @@
   </section>
   
 
-  <!-- white background portfolio view (3x3) grid -->
-
+  <!-- portfolio grid -->
   <xmp style="display:none;">
 
   <div class="container-fluid bg-3 text-center">
     
-    <div class="row">
-      <div class="col-sm-4">
+    <div class="row gx-5">
+      <div class="col-sm-4 d-flex flex-column align-items-center">
         <a href="./ur5e_bob/index.html">
-          <image style = "width: 75%"src = "./ur5e_bob/ur5e_bob.gif"> </image>
-          <br>
-          <h5 class="mt-2 mb-0">UR5e BLOCK BUILDER</h5>
+          <div class="d-flex justify-content-center align-items-center" style="height:400px; width:100%;">
+            <img src="./ur5e_bob/ur5e_bob.gif" style="max-height:100%; max-width:100%;" />
+          </div>
+          <h5 class="mt-0 mb-0">UR5e Block Manipulator</h5>
           <h6 class="mt-0 mb-0">IMU-guided Inverse Kinematics +</h6>
           <h6 class="mt-0 mb-0">Automatic Object Detection & Grabbing</h6>
         </a>
-
-        <!-- <br><h6 class="mt-2">[BOB TITLE HERE](./ur5e_bob/index.html)</h5> -->
       </div>
-      <div class="col-sm-4">
-        <image style = "width: 75%"src = "./ur5e_bob/ur5e_bob.gif" alt = "week 2 placeholder"> </image>
-        <br><h5 class="mt-2">[BOB TITLE HERE](./ur5e_bob/index.html)</h5>
+      <div class="col-sm-4 d-flex flex-column align-items-center">
+        <a href="./tiny_LM/index.html">
+          <div class="d-flex justify-content-center align-items-center" style="height:400px; width:100%;">
+            <img src="./tiny_LM/tiny_LM_demo.gif" style="max-height:100%; max-width:100%;" />
+          </div>
+          <h5 class="mt-0 mb-0">Movie Dialog Language Model</h5>
+          <h6 class="mt-0 mb-0">Tiny Transformer Model w/ DeepSeek-R1</h6>
+          <h6 class="mt-0 mb-0">architecture (trained on movie scripts)</h6>
+        </a>
       </div>
-      <div class="col-sm-4">
-        <image style = "width: 75%"src = "./ur5e_bob/ur5e_bob.gif" alt = "week 3 placeholder"> </image>
-        <br><h5 class="mt-2">[BOB TITLE HERE](./ur5e_bob/index.html)</h5>
+      <div class="col-sm-4 d-flex flex-column align-items-center">
+        <a href="./tiny_LM/index.html">
+          <div class="d-flex justify-content-center align-items-center" style="height:400px; width:100%;">
+            <img src="./tiny_LM/tiny_LM_demo.gif" style="max-height:100%; max-width:100%;" />
+          </div>
+          <h5 class="mt-0 mb-0">Movie Dialog Transformer</h5>
+        </a>
       </div>
     </div>
     <div class="row">
       <div class="col-sm-4">
-        <image style = "width: 75%"src = "./04_microcontroller/week4-placeholder-image.jpg" alt = "week 4 placeholder"> </image> 
-        <br>[Week 4: Programming](./04_microcontroller/index.html)
+        <image style = "width: 75%"src = "./tiny_LM/tiny_LM_demo.gif" alt = "week 4 placeholder"> </image> 
+        <br>[PPO vs GRPO @ HalfCheetah](./04_microcontroller/index.html)
       </div>
       <div class="col-sm-4">
-        <image style = "width: 75%"src = "./05_3Ddesign/week5-placeholder-image.jpg" alt = "week 5 placeholder"> </image>
-        <br>[Week 5: 3D Design](./05_3Ddesign/index.html)
+        <image style = "width: 75%"src = "./tiny_LM/tiny_LM_demo.gif" alt = "week 5 placeholder"> </image>
+        <br>[DQN vs PPO @ Snake](./05_3Ddesign/index.html)
       </div>
       <div class="col-sm-4">
-        <image style = "width: 75%"src = "./06_inputs/week6-placeholder-image.jpg" alt = "week 6 placeholder"> </image>
+        <image style = "width: 75%"src = "./tiny_LM/tiny_LM_demo.gif" alt = "week 6 placeholder"> </image>
         <br>[Week 6: Inputs](./06_inputs/index.html)
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-sm-4">
-        <image style = "width: 75%"src = "./07_outputs/week7-placeholder-image.jpg" alt = "week 7 placeholder"> </image>
-        <br>[Week 7: Outputs](./07_outputs/index.html)
-      </div>
-      <div class="col-sm-4">
-        <image style = "width: 75%"src = "./08_cnc/week8-placeholder-image.jpg" alt = "week 8 placeholder"> </image>
-        <br>[Week 8: CNC](./08_cnc/index.html)
-      </div>
-      <div class="col-sm-4">
-        <image style = "width: 75%"src = "./09_networking/week9-placeholder-image.jpg" alt = "week 9 placeholder"> </image>
-        <br>[Week 9: Networking](./09_networking/index.html)
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-sm-4">
-        <image style = "width: 75%"src = "./10_machine/machine-placeholder-image.jpg" alt = "machine building placeholder"> </image>
-        <br>[Machine Building](./10_machine/index.html)
-      </div>
-      <div class="col-sm-4">
-        <image style = "width: 75%"src = "./13_finalproject/final-project-placeholder-image.jpg" alt = "final project placeholder"> </image> 
-        <br>[Final Project](./13_finalproject/index.html)
       </div>
     </div>
   </div>
