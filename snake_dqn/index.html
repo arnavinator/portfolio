@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Arnav's Engineering Portfolio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../style.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],       // inline delimiters
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],    // display delimiters
+        packages: ['base', 'ams']                       // load AMS TeX extensions
+      },
+      options: {
+        // ensure MathJax processes dynamically‐added content
+        processHtmlClass: 'arithmatex',   
+        skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-sm navbar-dark">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-5">
+      <h2 class="nav-title">Arnav's Engineering Portfolio</h2>
+      <div class="navbar-nav">
+        <a class="nav-link" href="../index.html">Home</a>
+        <a class="nav-link" href="../about.html">About Me</a>
+
+        <div class="nav-item dropdown">
+          <!-- now a normal in-page link -->
+          <a
+            class="nav-link active"
+            href="../index.html#selected-work"
+            id="projectsDropdown"
+            aria-expanded="false"
+          >
+            Selected Work <span style="margin-left:1px; font-size:0.99em;">▾</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectsDropdown" id="dropdown-content"></ul>
+        </div>
+        
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero-section-proj">
+    <div class="textcontainer">
+      <h1 class="oswald-heading">
+        <u>Deep-Q Network Snake Agent</u>
+      </h1>
+      <h3 class="oswald-heading"><span style="color: rgb(242, 242, 242);">
+        Off-Policy Reinforcement Learning Agent teaches itself how to play Snake
+      </span></h3>
+
+      <h6><span style="color: rgb(242, 242, 242);">
+        <em>Skills: PyTorch, Pygame Design, Data Collection</em>
+      </span></h6>
+    </div>
+  </section>
+
+  <section class="textcontainer">
+    <h2 class="mb-4">Overview</h2>
+    In this project, I developed and optimized a <strong>Deep Q-Network (DQN) reinforcement learning agent</strong> to master the classic Snake game, 
+    demonstrating significant improvements through architectural enhancements and advanced training techniques.
+    <br><br>
+
+    The project began with a baseline DQN implementation using a simple 11-dimensional state representation and basic neural network architecture. 
+    Through systematic analysis and optimization, I evolved this into a sophisticated multi-modal neural network that processes both 
+    <em>compass-based directional information</em> and <em>visual field-of-view data</em>, resulting in substantially improved performance and training stability.
+    <br><br>
+
+    Key innovations include:
+    <ul>
+      <li>
+        <strong>Enhanced State Representation:</strong> Replaced simple binary danger detection with a rich 2D field-of-view system that captures spatial relationships and obstacle distances
+      </li>
+      <li>
+        <strong>Multi-Modal Neural Architecture:</strong> Designed a hybrid CNN-MLP network that separately processes visual and directional information before fusion
+      </li>
+      <li>
+        <strong>Advanced Training Techniques:</strong> Implemented priority experience replay, adaptive learning rate scheduling, and sophisticated epsilon-greedy exploration strategies
+      </li>
+      <li>
+        <strong>Hyperparameter Optimization:</strong> Systematic exploration of training configurations using parallel hyperparameter search across multiple agent instances
+      </li>
+    </ul>
+
+    The optimized agent demonstrates markedly improved learning efficiency, achieving higher average scores with more consistent performance compared to the baseline implementation. 
+    This project showcases the application of modern deep reinforcement learning techniques to a classic control problem, highlighting the importance of 
+    thoughtful state representation and neural architecture design in RL applications.
+  
+  </section>
+  
+  <div class="textcontainer">
+
+    <section class="table-of-contents">
+      <hr>
+
+      <h2 class="mb-3">Table of Contents</h2>
+      <ul>
+        <li><a href="#baseline_implementation">DQN Baseline Implementation Summary</a></li>
+        <li><a href="#optimized_implementation">DQN Optimized Implementation Summary</a></li>
+        <li><a href="#theory_overview">Reinforcement Learning Theory Overview</a></li>
+        <ul>
+          <li><a href="#bellman_equation">Standard Bellman Equation</a></li>
+          <li><a href="#epsilon_greedy">Epsilon-Greedy Algorithm</a></li>
+          <li><a href="#dqn_bellman">Deep-Q Network (DQN) Bellman Equation</a></li>
+        </ul>
+        <li><a href="#snake_game_overview">Snake Game Overview</a></li>
+      </ul>
+      <br> <br> 
+    </section>
+
+
+    <section id="baseline_implementation">
+      <hr>
+      <h2>DQN Baseline Implementation Summary</h2>
+
+      The baseline DQN implementation serves as the foundation for this project, utilizing a straightforward approach to reinforcement learning in the Snake environment.
+      This implementation uses a simple but effective state representation and neural network architecture.
+      <br><br>
+
+      <h5>State Representation:</h5>
+      The baseline agent uses an 11-dimensional state vector that encodes:
+      <ul>
+        <li>
+          <strong>Danger Detection (3 features):</strong> Binary indicators for collision danger in three relative directions:
+          <ul>
+            <li>Straight ahead relative to current movement direction</li>
+            <li>Right turn relative to current movement direction</li>  
+            <li>Left turn relative to current movement direction</li>
+          </ul>
+        </li>
+        <li>
+          <strong>Current Direction (4 features):</strong> One-hot encoding of snake's current movement direction (Up, Down, Left, Right)
+        </li>
+        <li>
+          <strong>Food Location (4 features):</strong> Binary indicators for food position relative to snake head (Left, Right, Up, Down)
+        </li>
+      </ul>
+
+      <h5>Neural Network Architecture:</h5>
+      The baseline model employs a simple fully-connected neural network:
+      <ul>
+        <li><strong>Input Layer:</strong> 11 neurons (state vector)</li>
+        <li><strong>Hidden Layer:</strong> 256 neurons with ReLU activation</li>
+        <li><strong>Output Layer:</strong> 3 neurons representing Q-values for actions [Straight, Right, Left]</li>
+      </ul>
+
+      <h5>Training Configuration:</h5>
+      <ul>
+        <li><strong>Experience Replay Buffer:</strong> 100,000 recent experiences</li>
+        <li><strong>Batch Size:</strong> 1,000 training samples per update</li>
+        <li><strong>Learning Rate:</strong> 0.001 (fixed)</li>
+        <li><strong>Discount Factor (γ):</strong> 0.9</li>
+        <li><strong>Epsilon Schedule:</strong> Linear decay from 80 to 0 over the first 80 games</li>
+      </ul>
+
+      The baseline implementation provides a solid foundation but has limitations in spatial awareness and state representation complexity, 
+      which motivated the development of the optimized version.
+      <br> <br> 
+    </section>
+
+
+    <section id="optimized_implementation">
+      <hr>
+      <h2>DQN Optimized Implementation Summary</h2>
+
+      The optimized DQN implementation represents a significant evolution from the baseline, incorporating advanced techniques 
+      in state representation, neural architecture, and training methodology. The improvements focus on providing the agent 
+      with richer environmental information and more sophisticated learning capabilities.
+      <br><br>
+
+      <h5>Enhanced State Representation:</h5>
+      The optimized agent processes two complementary data streams:
+      <ul>
+        <li>
+          <strong>Compass Information (4 features):</strong> Directional food detection with obstacle awareness
+          <ul>
+            <li>For each compass direction (North, East, South, West): -1 (no food), 0 (food but obstacle), 1 (food, clear path)</li>
+            <li>This replaces simple binary food location with path-finding intelligence</li>
+          </ul>
+        </li>
+        <li>
+          <strong>Visual Field-of-View (2D array):</strong> Spatial awareness matrix centered on the snake head
+          <ul>
+            <li>Configurable visibility range (default: 3 blocks in each direction)</li>
+            <li>Binary encoding: 1 for obstacles (walls/body), 0 for free space</li>
+            <li>Orientation-aware: rotates perspective based on current movement direction</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h5>Multi-Modal Neural Architecture:</h5>
+      The <strong>QNet</strong> class implements a sophisticated hybrid CNN-MLP architecture:
+      <ul>
+        <li>
+          <strong>Stream 1 (Compass Processing):</strong>
+          <ul>
+            <li>Fully-connected layers: 4 → 128 → 128 neurons</li>
+            <li>ReLU activations with dropout (p=0.1)</li>
+          </ul>
+        </li>
+        <li>
+          <strong>Stream 2 (Visual Processing):</strong>
+          <ul>
+            <li>2D Convolution: 1 → 3 channels, kernel size 2</li>
+            <li>Second convolution: 3 → 3 channels, kernel size 2</li>
+            <li>Fully-connected projection with residual connection</li>
+            <li>Dropout regularization (p=0.1)</li>
+          </ul>
+        </li>
+        <li>
+          <strong>Stream 3 (Fusion Network):</strong>
+          <ul>
+            <li>Concatenated features → 80 → 30 → 3 output neurons</li>
+            <li>ReLU activations throughout</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h5>Advanced Training Techniques:</h5>
+      <ul>
+        <li>
+          <strong>Adaptive Learning Rate:</strong> StepLR scheduler with decay every 90 episodes
+        </li>
+        <li>
+          <strong>Flexible Epsilon Strategies:</strong> Support for both linear and exponential decay schedules
+        </li>
+        <li>
+          <strong>Priority Experience Replay:</strong> Enhanced replay buffer that prioritizes end-game experiences and applies reward modification
+        </li>
+        <li>
+          <strong>Configurable Memory Management:</strong> Reduced buffer size (10,000) with smaller batch sizes (512) for more frequent updates
+        </li>
+        <li>
+          <strong>Training Frequency:</strong> Model updates every 4 frames instead of every frame, improving training stability
+        </li>
+      </ul>
+
+      <h5>Hyperparameter Optimization Framework:</h5>
+      The <strong>AgentTrainer</strong> class supports systematic hyperparameter exploration through the <strong>agent_train_pipeline</strong>:
+      <ul>
+        <li>Parallel training of multiple agent configurations using ThreadPoolExecutor</li>
+        <li>Grid search over key parameters: memory size, batch size, learning rate, discount factor, exploration parameters</li>
+        <li>Automated results collection and performance comparison</li>
+      </ul>
+
+      The optimized implementation demonstrates the power of thoughtful feature engineering and neural architecture design in reinforcement learning, 
+      providing the agent with both local spatial awareness and global directional intelligence.
+      <br> <br> 
+    </section>
+
+
+    <section id="theory_overview">
+      <hr>
+      <h2>Reinforcement Learning Theory Overview</h2>
+      
+      Reinforcement Learning (RL) is a machine learning paradigm where an agent learns to make decisions by interacting with an environment 
+      to maximize cumulative reward. In the context of the Snake game, the agent must learn to navigate the game board, collect food, 
+      and avoid collisions through trial and error.
+      <br><br>
+      
+      The fundamental RL framework consists of:
+      <ul>
+        <li><strong>Agent:</strong> The decision-making entity (our DQN)</li>
+        <li><strong>Environment:</strong> The Snake game world</li>
+        <li><strong>State ($s$):</strong> Current game configuration (snake position, food location, etc.)</li>
+        <li><strong>Action ($a$):</strong> Possible moves (straight, left turn, right turn)</li>
+        <li><strong>Reward ($r$):</strong> Feedback signal (+10 for food, -10 for collision, 0 otherwise)</li>
+        <li><strong>Policy ($\pi$):</strong> Strategy for selecting actions given states</li>
+      </ul>
+      
+      The goal is to learn an optimal policy $\pi^*$ that maximizes the expected cumulative reward over time.
+      <br> <br> 
+    </section>
+
+
+    <section id="bellman_equation">
+      <hr>
+      <h2>Standard Bellman Equation</h2>
+      
+      The Q-learning algorithm uses the Bellman equation to iteratively improve estimates of action-value pairs. 
+      The core update rule that drives learning is:
+      <br><br>
+      
+      $$Q(s,a) \leftarrow Q(s,a) + \alpha\left[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\right]$$
+      
+      where:
+      <ul>
+        <li>$Q(s,a)$ is the current estimate of the "score" for taking action $a$ in state $s$</li>
+        <li>$\alpha \in (0,1]$ is the learning rate, controlling how much we update our estimate</li>
+        <li>$r$ is the immediate reward received from taking action $a$ in state $s$</li>
+        <li>$\gamma \in [0,1]$ is the discount factor, determining how much we value future rewards</li>
+        <li>$s'$ is the new state reached after taking action $a$</li>
+        <li>$\max_{a'} Q(s',a')$ is our best estimate of future value from the new state</li>
+      </ul>
+      
+      <h5>Intuitive Understanding:</h5>
+      Think of this equation as updating our "score" for each {State, Action} pair using this logic:
+      <br><br>
+      
+      <strong>Score</strong> of {State, Action} = <strong>Existing "Score"</strong> + (learning rate) × [<strong>(Reward from entering {State, Action})</strong> + <strong>(Discounted Estimate of Future Rewards)</strong> - <strong>(Existing "Score")</strong>]
+      <br><br>
+      
+      The term in brackets $[r + \gamma \max_{a'} Q(s',a') - Q(s,a)]$ represents the "prediction error" - 
+      the difference between what we expected to get (our current Q-value) and what we actually experienced 
+      (immediate reward plus our best estimate of future rewards).
+      <br><br>
+      
+      When this error is positive, we increase our Q-value estimate. When negative, we decrease it. 
+      Over many iterations, these updates converge to the optimal action-values that maximize long-term reward.
+      <br> <br> 
+    </section>
+
+
+    <section id="epsilon_greedy">
+      <hr>
+      <h2>Epsilon-Greedy Algorithm</h2>
+      
+      The epsilon-greedy algorithm addresses the <strong>exploration-exploitation dilemma</strong> in reinforcement learning. 
+      The agent must balance between exploiting current knowledge to maximize immediate reward and exploring new actions 
+      to potentially discover better strategies.
+      <br><br>
+      
+      The epsilon-greedy policy selects actions according to:
+      $$
+      a_t = \begin{cases}
+      \arg\max_a Q(s_t, a) & \text{with probability } 1-\epsilon \text{ (exploitation)} \\
+      \text{random action} & \text{with probability } \epsilon \text{ (exploration)}
+      \end{cases}
+      $$
+      
+      where $\epsilon \in [0,1]$ is the exploration rate.
+      <br><br>
+      
+      <h5>Exploration Scheduling:</h5>
+      Both implementations use <strong>decaying epsilon schedules</strong> to shift from exploration to exploitation over time:
+      <ul>
+        <li>
+          <strong>Linear Decay:</strong> $\epsilon_t = \epsilon_0 - \frac{\epsilon_0 - \epsilon_{\text{min}}}{N} \cdot t$
+          <ul><li>Used in baseline: starts at high exploration, linearly decreases to zero</li></ul>
+        </li>
+        <li>
+          <strong>Exponential Decay:</strong> $\epsilon_t = \epsilon_0 \cdot \lambda^t$ where $\lambda < 1$
+          <ul><li>Available in optimized version: more gradual transition from exploration to exploitation</li></ul>
+        </li>
+      </ul>
+      
+      The intuition is that early in training, the agent knows little and should explore widely. As learning progresses 
+      and Q-values become more accurate, the agent should rely more heavily on its learned knowledge.
+      <br><br>
+      
+      <h5>Implementation Details:</h5>
+      In our Snake agent, epsilon-greedy action selection works as follows:
+      <ul>
+        <li>Generate random number $r \sim \text{Uniform}(0,1)$</li>
+        <li>If $r < \epsilon$: select random action from {straight, left, right}</li>
+        <li>If $r \geq \epsilon$: select $\arg\max_a Q(s, a)$ using the neural network</li>
+      </ul>
+      <br> <br> 
+    </section>
+
+
+    <section id="dqn_bellman">
+      <hr>
+      <h2>Deep-Q Network (DQN) Bellman Equation</h2>
+      
+      Deep Q-Networks extend the Q-learning update rule by using neural networks to approximate the Q-function. 
+      Instead of maintaining a lookup table for every possible {state, action} pair, we use a neural network to generalize 
+      across similar states and estimate Q-values for unseen situations.
+      <br><br>
+      
+      <h5>Function Approximation:</h5>
+      The neural network $Q(s,a;\theta)$ with parameters $\theta$ approximates our Q-value function:
+      $$Q(s,a;\theta) \approx Q^*(s,a)$$
+      
+      <h5>DQN Target Computation:</h5>
+      In DQN, we conceptually follow the same update rule as standard Q-learning, but instead of directly updating 
+      Q-values in a table, we train our neural network to predict target values. The target is computed as:
+      $$Q(s,a) \leftarrow r + \gamma \max_{a'} Q(s', a')$$
+      
+      Notice this looks identical to the standard Q-learning equation, but with a crucial difference: we set $\alpha = 1$ 
+      (no learning rate in the Bellman update itself). Instead, the learning rate is transferred to the neural network 
+      optimizer that performs gradient descent.
+      <br><br>
+      
+      <h5>Neural Network Training:</h5>
+      The network is trained to minimize the mean squared error between its predictions and the Bellman targets:
+      $$L(\theta) = \mathbb{E}\left[(r + \gamma \max_{a'} Q(s', a'; \theta) - Q(s,a;\theta))^2\right]$$
+      
+      The parameters are updated using gradient descent with learning rate $\alpha_{optimizer}$:
+      $$\theta \leftarrow \theta - \alpha_{optimizer} \nabla_\theta L(\theta)$$
+      
+      <h5>Key Intuition - DQN vs Standard Q-Learning:</h5>
+      In standard Q-learning, we directly update individual Q-values using a learning rate $\alpha$ to control how much 
+      we change our estimates. In DQN, we instead:
+      <ul>
+        <li><strong>Set the Bellman target as the "ground truth"</strong> (using $\alpha = 1$)</li>
+        <li><strong>Let the neural network learn gradually</strong> through many gradient descent steps with learning rate $\alpha_{optimizer}$</li>
+        <li><strong>Benefit from generalization:</strong> When we update the network for one {state, action} pair, similar states automatically get improved estimates</li>
+      </ul>
+      
+      This approach allows the network to learn complex patterns and generalize across the state space, enabling the agent 
+      to make intelligent decisions in states it has never directly experienced during training.
+      <br> <br> 
+    </section>
+
+
+    <section id="snake_game_overview">
+      <hr>
+      <h2>Snake Game Overview</h2>
+      
+      The Snake game serves as an excellent testbed for reinforcement learning algorithms, providing a discrete control problem 
+      with clear objectives, immediate feedback, and increasing difficulty as the agent improves.
+      <br><br>
+      
+      <h5>Game Mechanics:</h5>
+      <ul>
+        <li><strong>Grid World:</strong> The game takes place on a rectangular grid (typically 20x20 blocks)</li>
+        <li><strong>Snake Movement:</strong> The snake moves continuously in its current direction, advancing one block per time step</li>
+        <li><strong>Action Space:</strong> Three discrete actions available:
+          <ul>
+            <li>Continue straight</li>
+            <li>Turn left (relative to current direction)</li>
+            <li>Turn right (relative to current direction)</li>
+          </ul>
+        </li>
+        <li><strong>Food Mechanics:</strong> Food appears randomly on empty grid cells. When consumed, the snake grows by one segment</li>
+        <li><strong>Termination Conditions:</strong>
+          <ul>
+            <li>Collision with walls (boundary of the grid)</li>
+            <li>Collision with the snake's own body</li>
+          </ul>
+        </li>
+      </ul>
+      
+      <h5>Reward Structure:</h5>
+      The reward function provides clear learning signals:
+      $$
+      r_t = \begin{cases}
+      +10 & \text{if snake eats food} \\
+      -10 & \text{if snake collides (game over)} \\
+      0 & \text{otherwise (normal movement)}
+      \end{cases}
+      $$
+      
+      <h5>Learning Challenges:</h5>
+      The Snake environment presents several interesting challenges for RL agents:
+      <ul>
+        <li>
+          <strong>Sparse Rewards:</strong> Positive rewards (+10) occur infrequently, especially early in training
+        </li>
+        <li>
+          <strong>Growing Complexity:</strong> As the snake grows longer, navigating becomes progressively more difficult
+        </li>
+        <li>
+          <strong>Long-term Planning:</strong> Sometimes the agent must take seemingly suboptimal actions to avoid future traps
+        </li>
+        <li>
+          <strong>Spatial Reasoning:</strong> Success requires understanding spatial relationships and predicting future positions
+        </li>
+      </ul>
+      
+      <h5>Implementation Details:</h5>
+      Both baseline and optimized implementations use the <strong>SnakeGameAI</strong> class, which provides:
+      <ul>
+        <li>Configurable grid size and game speed</li>
+        <li>Collision detection for walls and self-intersection</li>
+        <li>Random food placement</li>
+        <li>Score tracking and game state management</li>
+        <li>Optional visualization for training monitoring</li>
+      </ul>
+      
+      The Snake game's combination of simplicity and complexity makes it an ideal benchmark for comparing different RL approaches 
+      and demonstrating the impact of architectural and algorithmic improvements.
+      <br> <br> 
+    </section>
+
+  </div>
+
+  <!-- Back-to-Top button -->
+  <div id="backToTop" title="Go to top">  Back to Top ▲  </div>
+  <script>
+    // Get the button
+    const backToTopBtn = document.getElementById('backToTop');
+  
+    // 1) Show/hide button when scrolling
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        // If scrolled more than 300px, show the button
+        backToTopBtn.classList.add('show');
+        backToTopBtn.classList.remove('hide');
+      } else {
+        // Otherwise, hide it
+        backToTopBtn.classList.add('hide');
+        backToTopBtn.classList.remove('show');
+      }
+    });
+  
+    // // scroll to top on hover
+    // backToTopBtn.addEventListener('mouseenter', () => {
+    //   window.scrollTo({ top: 0, behavior: 'smooth' });
+    // });
+
+    // scroll to top on click
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+
+  <script>
+    fetch("../dropdown.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("dropdown-content").innerHTML = html;
+      });
+  </script>
+
+  
+</body>
+
+<footer class="footer-bar">
+  <div class="container text-center py-2">
+    <a
+      class="footer-link"
+      href="https://www.linkedin.com/in/arnav-srivastava/"
+      target="_blank"
+      rel="noopener"
+    >
+      <p class="fs-5">
+        Want to get in touch? Reach out to me on LinkedIn
+        <i class="bi bi-linkedin" style="font-size: 1.5rem;"></i>
+      </p>
+    </a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
