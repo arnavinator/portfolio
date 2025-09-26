@@ -13,7 +13,7 @@
         packages: ['base', 'ams']                       // load AMS TeX extensions
       },
       options: {
-        // ensure MathJax processes dynamically‐added content
+        // ensure MathJax processes dynamically-added content
         processHtmlClass: 'arithmatex',   
         skipHtmlTags: ['script','noscript','style','textarea','pre','code']
       }
@@ -102,7 +102,7 @@
       </div>
     </div>
 
-    In this project, I created various small Transformer architectures from scratch (for pedagological purposes), and evaluated their performance on 
+    In this project, I created various small Transformer architectures from scratch (for pedagogical purposes), and evaluated their performance 
     on the <a href="https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html" target="_blank">Cornell Movie Dialogs Corpus dataset</a> (comparing model size,
     model loss, and inference latency on my M2 Macbook Air).
     <br><br>
@@ -218,7 +218,7 @@
         </li>
       </ol>
       The final best performing model is in a Python file, with post-training weights 
-      available for inference testing. All experiments are conducted within a separate Jupyter Notbook. Please see <a href="#code">Full Code</a>.
+      available for inference testing. All experiments are conducted within a separate Jupyter Notebook. Please see <a href="#code">Full Code</a>.
       <br><br>
       
       <h5>Part 1:</h5>
@@ -257,17 +257,17 @@
 
         </div>
       </div>
-      As shown in the table below, a learned position embedding table and RoPE at the begining lead to a lower validation loss than no positional embedding,
+      As shown in the table below, a learned position embedding table and RoPE at the beginning lead to a lower validation loss than no positional embedding,
       demonstrating that having an indication of token indices easily provides value to model learning.
       <br>
       The next extension would be to have a positional encoding for every head in every subblock of MHA (not just before the first Transformer block). Since RoPE is cheaper 
       on memory than a learned position embedding table (in-place multiplication by constants consumes less memory than a much larger table for every head in every subblock),
-      I then repeat the RoPE application for for every head in every subblock of MHA. The resulting architecture leads to a further signficant decrease in 
+      I then repeat the RoPE application for every head in every subblock of MHA. The resulting architecture leads to a further significant decrease in 
       validation loss of the model.  
       <br><br>
 
       <h5>Part 2:</h5>
-      Now that I've demonstrated that the SOTA positional encoding approach is in fact the best performing, I wanted to explore other architectural tradeoffs, in particularly
+      Now that I've demonstrated that the SOTA positional encoding approach is in fact the best performing, I wanted to explore other architectural tradeoffs, in particular
       with respect to Vanilla Transformer design versus DeepSeek Transformer design.
       
       The following architecture attributes were held constant for the experiment below:
@@ -336,7 +336,7 @@
       <ul>
         <li>
           While about 2x more parameters are now activated <em>per token</em>, the performance gain is clear: training experts which are
-          context dependents leads to a notable validation loss reduction.  
+          context-dependent leads to a notable validation loss reduction.  
         </li>
         <li>
           We see about a <u>40% inference slowdown</u> on CPU compared to the Vanilla architecture, which could likely be reduced 
@@ -641,7 +641,7 @@
     <section id="moe_theory">
       <hr>
       <h2>Feed-Forward Network Mixture of Experts (MoE FFN)</h2>
-      Utlized by DeepSeek-V3, Mixture of Experts Feed Forward Networks (<strong>MoE FFN</strong>) which replaces traditional FFNs in transformers.
+      Utilized by DeepSeek-V3, Mixture of Experts Feed Forward Networks (<strong>MoE FFN</strong>) which replaces traditional FFNs in transformers.
       <br>
       Once again, let $x_t \in \mathbb{R}^{d_{model}}$ be the input to MoE FFN, which is $t$-th token output of SA, MHA, or MLA.
       MoE employs $N_s$ <strong>shared experts</strong> that always contribute to the FFN output and $N_r$ <strong>routed experts</strong> 
@@ -679,7 +679,7 @@
       $$
       g'_{i,t} = \begin{cases} s_{i,t} & s_{i,t} + b_i \in \mathrm{Topk}\left(\{s_{j,t} + b_j \mid 1 \leq j \leq N_r\}, K_r\right), \\ 0, & \mathrm{otherwise}. \end{cases}
       $$
-      Note that $b_i$ is only used to influece the $\mathrm{Topk}$ filtering, but the original $s_{i,t}$ value is still used for calculating the affinity.
+      Note that $b_i$ is only used to influence the $\mathrm{Topk}$ filtering, but the original $s_{i,t}$ value is still used for calculating the affinity.
       <br>
 
       At the end of each training iteration, $b_i$ is decreased by $\gamma$ if its corresponding expert is overloaded and increased 
@@ -716,8 +716,6 @@
     <section id="code">
       <hr>
       <h2>Full Code</h2>
-      See MATLAB implementation in Github repository <a href="https://github.com/arnavinator/ur5e_block_builder/blob/main/ur5e_block_builder.m" target="_blank">here</a>. 
-
       To see the step-by-step model architecture development and architecture experiments, see notebook 
       <em><a href="https://github.com/arnavinator/movie_convo_transformer/blob/main/my_gpt.ipynb" target="_blank">my_gpt.ipynb</a></em>. 
       <br>

@@ -13,7 +13,7 @@
         packages: ['base', 'ams']                       // load AMS TeX extensions
       },
       options: {
-        // ensure MathJax processes dynamically‐added content
+        // ensure MathJax processes dynamically-added content
         processHtmlClass: 'arithmatex',   
         skipHtmlTags: ['script','noscript','style','textarea','pre','code']
       }
@@ -66,13 +66,33 @@
 
   <section class="textcontainer">
     <h2 class="mb-4">Overview</h2>
+
+    <div class="row gx-0 mb-4 mt-4 align-items-center">
+      <div style="width: 2%; padding:0;" class="custom-column" style="width: 100%; height: 100%; object-fit: fill;">
+      </div>
+      <div style="width: 31%; padding:0;" class="custom-column">
+        <video autoplay muted loop class="img-fluid">
+          <source src="./snake_play_crop.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <div style="width: 4%; padding:0;" class="custom-column" style="width: 100%; height: 100%; object-fit: fill;">
+      </div>
+      <div style="width: 61%; padding:0;" class="custom-column">
+        <img src="./perf_comparison.png" class="img-fluid">
+      </div>
+      <div style="width: 2%; padding:0;" class="custom-column" style="width: 100%; height: 100%; object-fit: fill;">
+      </div>
+    </div>
+
     In this project, I developed and optimized a <strong>Deep Q-Network (DQN) reinforcement learning agent</strong> to master the classic Snake game, 
     demonstrating significant improvements through architectural enhancements and advanced training techniques.
     <br><br>
 
     The project began with a baseline DQN implementation using a simple 11-dimensional state representation and basic neural network architecture. 
-    Through systematic analysis and optimization, I evolved this into a sophisticated multi-modal neural network that processes both 
-    <em>compass-based directional information</em> and <em>visual field-of-view data</em>, resulting in substantially improved performance and training stability.
+    Through systematic analysis, I aimed to make the agent more performant by improving the architecture into a sophisticated multi-modal neural network 
+    processing richer state data (both <em>compass-based directional information</em> and <em>visual field-of-view data</em>) as well as optimizing the training
+    recipe, resulting in substantially improved performance and training stability.
     <br><br>
 
     Key innovations include:
@@ -106,6 +126,7 @@
       <ul>
         <li><a href="#baseline_implementation">DQN Baseline Implementation Summary</a></li>
         <li><a href="#optimized_implementation">DQN Optimized Implementation Summary</a></li>
+        <li><a href="#results">Findings and Results</a></li>
         <li><a href="#theory_overview">Reinforcement Learning Theory Overview</a></li>
         <ul>
           <li><a href="#bellman_equation">Standard Bellman Equation</a></li>
@@ -113,6 +134,7 @@
           <li><a href="#dqn_bellman">Deep-Q Network (DQN) Bellman Equation</a></li>
         </ul>
         <li><a href="#snake_game_overview">Snake Game Overview</a></li>
+        <li><a href="#code">Full Code</a></li>
       </ul>
       <br> <br> 
     </section>
@@ -138,10 +160,10 @@
           </ul>
         </li>
         <li>
-          <strong>Current Direction (4 features):</strong> One-hot encoding of snake's current movement direction (Up, Down, Left, Right)
+          <strong>Current Direction (4 features):</strong> One-hot encoding of snake's current movement direction (North, East, South, West)
         </li>
         <li>
-          <strong>Food Location (4 features):</strong> Binary indicators for food position relative to snake head (Left, Right, Up, Down)
+          <strong>Food Location (4 features):</strong> Binary indicators for food position relative to snake head (North, East, South, West)
         </li>
       </ul>
 
@@ -156,13 +178,15 @@
       <h5>Training Configuration:</h5>
       <ul>
         <li><strong>Experience Replay Buffer:</strong> 100,000 recent experiences</li>
-        <li><strong>Batch Size:</strong> 1,000 training samples per update</li>
         <li><strong>Learning Rate:</strong> 0.001 (fixed)</li>
         <li><strong>Discount Factor (γ):</strong> 0.9</li>
         <li><strong>Epsilon Schedule:</strong> Linear decay from 80 to 0 over the first 80 games</li>
+        <li><strong>Training Recipe:</strong> Train QNet based on most recent (S,A,R,S,A) every frame (similar to Standard Bellman Equation, batch size of 1), 
+          and train QNet on (S,A,R,S,A) batch from memory (batch size of 1000) every game-over
+        </li>
       </ul>
 
-      The baseline implementation provides a solid foundation but has limitations in spatial awareness and state representation complexity, 
+      The baseline implementation provides a solid foundation but has limitations in state representation complexity and training recipe,
       which motivated the development of the optimized version.
       <br> <br> 
     </section>
@@ -178,20 +202,24 @@
       <br><br>
 
       <h5>Enhanced State Representation:</h5>
-      The optimized agent processes two complementary data streams:
+      The optimized agent processes two complementary data streams to allow for superior path planning:
       <ul>
         <li>
-          <strong>Compass Information (4 features):</strong> Directional food detection with obstacle awareness
+          <strong>Food-Finding Compass Information (4 features):</strong> Directional food detection with obstacle awareness
           <ul>
-            <li>For each compass direction (North, East, South, West): -1 (no food), 0 (food but obstacle), 1 (food, clear path)</li>
-            <li>This replaces simple binary food location with path-finding intelligence</li>
+            <li>For each compass direction (North, East, South, West): -1 (no food), 0 (food but obstacle in this direction), 1 (food with no obstacle in this direction)</li>
+            <li>This replaces simple binary food location with path-finding intelligence: the old agent might move toward food even if the path is blocked, while
+              the new agent can distinguish between "food exists" and "food is reachable" and avoid getting trapped.
+            </li>
+            <li>State representation is more dense: no need to tell agent food direction and snake direction, but instead only provide agent the compass vector
+              and encourage it to learn how its actions induce changes in this substate.
+            </li>
           </ul>
         </li>
         <li>
-          <strong>Visual Field-of-View (2D array):</strong> Spatial awareness matrix centered on the snake head
+          <strong>Obstacle Detection Field-of-View:</strong> Spatial (2D) awareness matrix centered on the snake head
           <ul>
-            <li>Configurable visibility range (default: 3 blocks in each direction)</li>
-            <li>Binary encoding: 1 for obstacles (walls/body), 0 for free space</li>
+            <li>Configurable visibility range of grid surrounding the snake head: 1 for obstacles (walls/body), 0 for free space</li>
             <li>Orientation-aware: rotates perspective based on current movement direction</li>
           </ul>
         </li>
@@ -225,7 +253,7 @@
         </li>
       </ul>
 
-      <h5>Advanced Training Techniques:</h5>
+      <h5>Advanced Training Techniques (with optimal choices found via hyperparameter search): </h5>
       <ul>
         <li>
           <strong>Adaptive Learning Rate:</strong> StepLR scheduler with decay every 90 episodes
@@ -240,9 +268,22 @@
           <strong>Configurable Memory Management:</strong> Reduced buffer size (10,000) with smaller batch sizes (512) for more frequent updates
         </li>
         <li>
-          <strong>Training Frequency:</strong> Model updates every 4 frames instead of every frame, improving training stability
+          <strong>Training Recipe:</strong> Train QNet on (S,A,R,S,A) batch from vanilla replay buffer every 4 frames, and train from priority
+          replay buffer on last <em>n</em> games every game-over to place emphasis on learning from game-over (negative reward) experience (only after 35 games when Agent understands game fundamentals) 
+          <ul>
+            <li>
+              Higher frequency experience replay was very important for Deep-Q Learning: without a replay buffer, an agent would learn from consecutive experiences, which are often 
+              highly correlated (ie current state is very correlated with the next state) which can cause poor generalization. 
+            </li>
+            <li>
+              By sampling experiences randomly from the Replay Buffer, the agent learns from a more diverse and less correlated set of experiences, leading to better learning stability.
+              A replay buffer also allows the agent to reuse past experiences multiple times (increasing the efficiency of past experiences rather than being too reliant on the
+               most recent actions which might not yet represent an optimal policy)
+            </li>
+          </ul>
         </li>
       </ul>
+
 
       <h5>Hyperparameter Optimization Framework:</h5>
       The <strong>AgentTrainer</strong> class supports systematic hyperparameter exploration through the <strong>agent_train_pipeline</strong>:
@@ -257,6 +298,56 @@
       <br> <br> 
     </section>
 
+    <section id="results">
+      <hr>
+      <h2>Findings and Results</h2>
+
+      <div style="text-align: center;">
+          <img src="./perf_comparison.png" class="img-fluid center-image" style="width: 70%;">
+      </div>
+
+      After improving the QNet neural network architecture, creating richer state data, improving the training
+      recipe, and systematically exploring training/data related hyperparameters, we see strong performance improvement from the baseline DQN to the optimized DQN 
+      implementation. In particular, the optimized implementation has the following differences:
+      <ul>
+        <li>
+          <em>Faster Learning</em>: the baseline agent only learns when the epsilon for epsilon-greedy policy has sufficiently decayed (around Game 80/120), whereas the optimized agent 
+          learns much faster and reaches the same approximate performance around Game 25/120.  
+        </li>
+        <li>
+          <em>Consistent Learning</em>: the baseline agent plateaus after epsilon decay (with the same performance from Game 80 to final Game 120), whereas the optimized agent 
+          continues to learn from its newly collected experience with a consistent positive trend in 5-game-moving-average of Snake length.  
+        </li>
+        <li>
+          <em>Higher Performance, with greater caution</em>: the baseline agent has a high score of 49 and a final 5-game-moving-average of 31.4, whereas the optimized agent
+          has a high score of 96 and a final 5-game-moving-average of 75.5. At the same time, the optimized agent is "less efficient" as it takes more frames to get to the food
+          compared to the baseline agent (but does so in order to be better rewarded for longer Snake lengths and better survivability).
+        </li>
+      </ul>
+      
+      After hyperparameter search, the following parameters were proven to be the most performant for training:
+      <ul>
+        <li>Replay Buffer Size      : 10_000 entries (remembers the last ~15-20 games)  </li>
+        <li>Batch Size     : 500  </li>
+        <li>Alpha           : 0.001  </li>
+        <li>Alpha Decay    : True (StepLR learning rate optimizer for DQN)  </li>
+        <li>Gamma           : 0.7  </li>
+        <li>Epsilon        : 0.4   </li>
+        <li>Epsilon Floor   : 0.0 (minimal Epsilon value for decay process)  </li>
+        <li>Epsilon Decay Type : Exponential  </li>
+        <li>Epsilon Decay Limit: 80 (# of games until Epsilon Floor is hit)  </li>
+        <li>Priority Replay Buffer Enable   : True  (allow for additional priority replay training at end of every episode)  </li>
+      </ul>
+
+      The final trained model weights were saved. Running <em>inference.py</em> with pretrained best model weights, we see the following across a sample of 10 games:
+      <ul>
+        <li>Record Length:                   <strong>   115  </strong> </li>
+        <li>Mean(Last 10 Games Length):      <strong>   83.2 </strong> </li>
+        <li>Stdev(Last 10 Games Length):     <strong>   24.4 </strong> </li>
+      </ul>   
+
+      <br> <br> 
+    </section>
 
     <section id="theory_overview">
       <hr>
@@ -478,8 +569,14 @@
         <li>Optional visualization for training monitoring</li>
       </ul>
       
-      The Snake game's combination of simplicity and complexity makes it an ideal benchmark for comparing different RL approaches 
-      and demonstrating the impact of architectural and algorithmic improvements.
+      <br> <br> 
+    </section>
+
+
+    <section id="code">
+      <hr>
+      <h2>Full Code</h2>
+      Please see full implementation in Github repository <a href="https://github.com/arnavinator/snake-rl" target="_blank">here</a>. 
       <br> <br> 
     </section>
 
