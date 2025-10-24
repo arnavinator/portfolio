@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Arnav's Engineering Portfolio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../style.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],       // inline delimiters
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],    // display delimiters
+        packages: ['base', 'ams']                       // load AMS TeX extensions
+      },
+      options: {
+        // ensure MathJax processes dynamically-added content
+        processHtmlClass: 'arithmatex',   
+        skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-sm navbar-dark">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-5">
+      <h2 class="nav-title">Arnav's Engineering Portfolio</h2>
+      <div class="navbar-nav">
+        <a class="nav-link" href="../index.html">Home</a>
+        <a class="nav-link" href="../about.html">About Me</a>
+
+        <div class="nav-item dropdown">
+          <!-- now a normal in-page link -->
+          <a
+            class="nav-link active"
+            href="../index.html#selected-work"
+            id="projectsDropdown"
+            aria-expanded="false"
+          >
+            Selected Work <span style="margin-left:1px; font-size:0.99em;">▾</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectsDropdown" id="dropdown-content"></ul>
+        </div>
+        
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero-section-proj">
+    <div class="textcontainer">
+      <h1 class="oswald-heading">
+        <u>PCIe Architect Conversational Assistant</u>
+      </h1>
+      <h3 class="oswald-heading"><span style="color: rgb(242, 242, 242);">
+        Using RAG, Speech-to-Text, and Text-to-Speech models to create a helpful voice-based PCIe Specification-Parsing Assistant 
+      </span></h3>
+
+      <h6><span style="color: rgb(242, 242, 242);">
+        <em>Skills: AWS Bedrock, Deepgram STT/TTS, Daily.co WebRTC, Pipecat Pipeline, Vector RAG, Real-time Voice AI</em>
+      </span></h6>
+    </div>
+  </section>
+
+  <section class="textcontainer">
+    <h2 class="mb-4">Overview</h2>
+
+      <div class="container">
+        <div class="row gx-0 mb-4 mt-4 align-items-center">
+          <div style="width: 3%; padding:0;" class="custom-column">
+          </div>
+
+          <div style="width: 94%; padding:0; text-align: center;" class="custom-column">
+            <figure style="margin: 0;">
+                <video width="80%" controls style="max-width: 900px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                  <source src="./PCIe_agent_full_demo.mp4" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>          <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+                <em>Fig. 1: Live demo of PCIe Architecture Conversational Agent. Key behaviors 
+                  are highlighted in <a href="#results">Results & Analysis</a>.
+                </em>
+              </figcaption>
+            </figure>
+          </div>
+
+          <div style="width: 3%; padding:0;" class="custom-column">
+          </div>
+
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row gx-0 mb-4 mt-4 align-items-center">
+          <div style="width: 3%; padding:0;" class="custom-column">
+          </div>
+
+          <div style="width: 94%; padding:0; text-align: center;" class="custom-column">
+            <figure style="margin: 0;">
+              <img src="./system_arch_diagram.png" class="img-fluid">
+              <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+                <em>Fig. 2: Agentic Flow diagram; see 
+                  <a href="#system_architecture">System Architecture & Technology Stack</a> for further details
+                  </em>
+              </figcaption>
+            </figure>
+          </div>
+
+          <div style="width: 3%; padding:0;" class="custom-column">
+          </div>
+
+        </div>
+      </div>
+    
+
+    In this project, I developed a conversational assistant that provides real-time access to PCIe (Peripheral Component Interconnect Express) endpoint specifications through
+     Retrieval-Augmented Generation (RAG), Speech-to-Text, and Text-to-Speech models. The system demonstrates a sophisticated integration of voice processing, large language models, and vector search 
+     to create a natural conversational interface for querying complex hardware documentation. Based on their personality, I named my assistant <em>Tony</em>.
+    <br><br>
+
+    This project deploys a <strong>real-time voice processing pipeline</strong> that seamlessly converts natural speech queries into actionable responses
+    with several AI tools working together:
+    $$\text{User Speech} \xrightarrow{\text{Daily.co}} \text{Audio Stream} \xrightarrow{\text{VAD}} \text{Speech Segments} \xrightarrow{\text{Deepgram STT}} \text{Text Query}$$
+    $$\xrightarrow{\text{Claude + Strands}} \text{Response Text} \xrightarrow{\text{Deepgram TTS}} \text{Audio Response} \xrightarrow{\text{Daily.co}} \text{User Audio}$$
+    where:
+    <ul>
+      <li><strong>AWS Bedrock</strong> powers both the primary conversational LLM (Claude 3.5 Haiku) and the knowledge base RAG with vector embeddings stored in Aurora
+     PostgreSQL.</li>
+     <li><strong>Deepgram's Nova-3</strong> provides Speech-To-Text (STT) conversion.</li>
+     <li><strong>Aura-2</strong> provides Text-To-Speech (TTS) conversion with natural-sounding voice responses.</li>
+     <li><strong>Pipecat</strong> orchestrates the pipeline with low latency and interruption handling.</li>
+     <li><strong>Daily.co</strong> provides WebRTC transport for browser-based voice interaction and provides Silero AI's Voice Activity Detection (VAD).</li>
+    </ul>
+    <br>
+
+    Tony operates with <strong>dual-mode intelligence</strong>, automatically routing queries through an intelligent decision system:
+    <ul>
+      <li>
+        <span style="color: rgb(28, 31, 215);"><strong>RAG Mode</strong></span>: For PCIe-specific queries, the system searches a curated knowledge
+         base containing detailed specifications for 6 different PCIe Endpoints using hybrid semantic and keyword search
+      </li>
+      <li>
+        <span style="color: rgb(195, 23, 23);"><strong>General Knowledge Mode</strong></span>: For broader technical questions, the system leverages 
+        the LLM's general knowledge capabilities directly for immediate responses
+      </li>
+    </ul>
+
+    The knowledge base contains six fictional PCIe Endpoint specifications (NVMe controllers, GPU accelerators, network cards, etc.) including vendor information,
+    supported lane configurations, power states, LTSSM (Link Training and Status State Machine) transitions, performance metrics, and compliance standards. 
+    The RAG implementation uses <strong>hybrid search</strong> - combining semantic vector similarity with traditional keyword 
+    matching - to ensure both conceptual understanding and precise technical term retrieval.
+    <br><br>
+
+    Key technical achievements include context-aware query augmentation (the system remembers previous conversation context to enhance follow-up questions), 
+    graceful error handling with fallback search strategies, and human-like low-latency conversational flow, demonstrating
+      the potential for voice-first interfaces in technical documentation and support scenarios.
+  </section>
+
+  <div class="textcontainer">
+
+    <section class="table-of-contents">
+      <hr>
+
+      <h2 class="mb-3">Table of Contents</h2>
+      <ul>
+        <li><a href="#implementation">Implementation Details</a></li>
+        <ul>
+          <li><a href="#system_architecture">System Architecture & Technology Stack</a></li>
+          <li><a href="#rag_implementation">RAG Implementation & Knowledge Base</a></li>
+          <li><a href="#agent_configuration">Agent Configuration & Prompts</a></li>
+        </ul>
+        <li><a href="#results">Results & Analysis</a></li>
+        <li><a href="#theory">Theory Explanations</a></li>
+        <ul>
+          <li><a href="#rag_theory">Retrieval-Augmented Generation (RAG) & Vector Search Theory</a></li>
+          <li><a href="#vad_theory">Voice Activity Detection (VAD) Theory</a></li>
+          <li><a href="#stt_theory">Speech-to-Text (STT) Theory</a></li>
+          <li><a href="#tts_theory">Text-to-Speech (TTS) Theory</a></li>
+        </ul>
+        <li><a href="#code">Full Code</a></li>
+      </ul>
+      <br>
+    </section>
+
+
+    <section id="implementation">
+      <hr>
+      <h2>Implementation Details</h2>
+    </section>
+
+    <section id="system_architecture">
+      <hr>
+      <h3>System Architecture & Technology Stack</h3>
+
+      The conversational assistant operates through a sophisticated real-time processing pipeline orchestrated by <strong>Pipecat</strong>, 
+      where each component handles a specific transformation in the voice-to-voice interaction flow. The core pipeline follows this exact sequence:
+      $$\text{User Speech} \xrightarrow{\text{Daily.co}} \text{Audio Stream} \xrightarrow{\text{VAD}} \text{Speech Segments} \xrightarrow{\text{Deepgram STT}} \text{Text Query}$$
+      $$\xrightarrow{\text{Claude + Strands}} \text{Response Text} \xrightarrow{\text{Deepgram TTS}} \text{Audio Response} \xrightarrow{\text{Daily.co}} \text{User Audio}$$
+      <br>
+
+      The system integrates multiple AI services and frameworks, each selected for specific capabilities that collectively enable real-time voice interaction with sub-second latency.
+      <br>
+      All components communicate through async/await patterns, ensuring non-blocking operations and optimal resource utilization for real-time voice processing. 
+      This architecture ensures that Tony immediately greets users upon connection and properly manages resources when users disconnect.
+      <br>
+
+      <figure class="figure">
+        <img src="./system_arch_diagram.png" class="figure-img img-fluid rounded">
+      </figure>
+
+
+      <br><br>
+
+      <h5>Language Models</h5>
+      The system employs a <strong>multi-model architecture</strong> where different models handle specific tasks:
+      <ul>
+        <li><strong>Claude 3.5 Haiku:</strong> Primary LLM for natural dialogue generation and complex reasoning.</li>
+        <li><strong>Amazon Nova Lite:</strong> Lightweight model used by the Strands routing system for rapid tool selection with 250-token response limits to minimize latency.</li>
+        <li><strong>Cohere Embed English v3:</strong> Text embedding model for RAG vector representations in the knowledge base.</li>
+      </ul>
+      <br>
+
+      <h5>Context Management & RAG Infrastructure</h5>
+      The knowledge retrieval system leverages multiple AWS services:
+      <ul>
+        <li><strong>AWS Bedrock Knowledge Base:</strong> Managed service that automatically handles document chunking (350 tokens per chunk, 30% overlap), vector 
+          embedding generation, and similarity search orchestration.</li>
+        <li><strong>Aurora PostgreSQL with pgvector:</strong> Vector database storing document embeddings with native similarity search capabilities, 
+          enabling both exact and approximate nearest neighbor (ANN) queries.</li>
+        <li><strong>S3 Document Storage:</strong> Source documents stored in structured format with automatic ingestion pipeline.</li>
+        <li><strong>OpenAI LLM Context:</strong> Maintains context for LLM, including user prompts, tool requests, and tool results.</li>   
+      </ul>
+      <br>
+    
+      <h5>Voice Processing Models</h5>
+      <ul>
+        <li><strong>DeepGram Nova-3:</strong> Speech-to-Text model with formatting that automatically adds punctuation and capitalization, reducing post-processing needs.</li>
+        <li><strong>DeepGram Aura-2:</strong> Text-to-Speech model with natural-sounding voice synthesis using voice model at 24 kHz sample rate, providing human-like intonation and pacing.</li>
+        <li><strong>Silero VAD:</strong> Voice Activity Detection which can distinguish between speech segments and non-speech audio (silence, background noise, music).</li>
+      </ul>
+      <br>
+
+      <h5>Orchestration & Communication Frameworks</h5>
+      <ul>
+        <li><strong>Pipecat:</strong> Handles frame-based processing where each component in the pipeline receives, processes, and forwards data frames, with asynchronous processing and VAD-driven interruptions.</li>
+        <li><strong>Daily.co:</strong> Provides WebRTC transport for bidirectional audio streaming, allows users to interact with Tony through web browser chat room.</li>
+      </ul>
+      <br> 
+    </section>
+
+    <section id="rag_implementation">
+      <hr>
+      <h3>RAG Implementation & Knowledge Base</h3>
+      This RAG implementation enables Tony to provide accurate, sourced responses about specific PCIe endpoints 
+      while maintaining the flexibility to handle both precise technical queries and broader conceptual questions.
+      <br><br>
+
+      <h5>Document Processing Pipeline</h5>
+      AWS Bedrock Knowledge Base automatically processes source documents through a sophisticated ingestion pipeline:
+
+      $$\text{Raw Documents} \xrightarrow{\text{S3 Upload}} \text{Document Storage} \xrightarrow{\text{Chunking}} \text{350-token Segments}$$
+      $$\xrightarrow{\text{Cohere Embed}} \text{Vector Embeddings} \xrightarrow{\text{pgvector}} \text{Aurora PostgreSQL}$$
+      <br>
+
+      <h5>Hybrid Search Implementation</h5>
+      If the Strands Agent (Nova Lite) chooses to employ <em>search_knowledge_base</em> (as opposed to <em>general_query</em>), it 
+      employs a <strong>dual-strategy RAG approach</strong> to maximize retrieval accuracy. 
+      <br>
+      <ul>
+        <li><strong>Primary Search: Hybrid RAG</strong></li>
+        <ul>
+          <li>
+            Combine semantic vector similarity (dense retrieval, ex. sentence transformer) with keyword matching (sparse retrieval, ex. BM25), and returns up to the top <em>max_results</em> most relevant results for processing.
+          </li>
+        </ul>
+        <li><strong>Fallback Strategy: Semantic RAG</strong></li>
+        <ul>
+          <li>
+            If the hybrid search returns no results, the system automatically retries with pure semantic search by changing the search type configuration,
+            and returns up to the top <em>max_results</em> most relevant results for processing.
+          </li>
+          <li>
+            Aims for maximum retrieval coverage even for complex or ambiguous queries.
+          </li>
+        </ul>
+      </ul>
+      For both strategies, AWS Bedrock automatically provides a relevance score for each of the retrieved chunks.
+      <br>
+      The most relevant chunks are then provided to the main LLM for decision making.
+      <br><br>
+
+      <h5>Knowledge Base Construction</h5>
+      In order to create a PCIe-tailored knowledge base, I first requested that Claude synthesize six fictional PCIe Endpoint specifications which should
+      at least specify vendor information, supported lane configurations, power states, LTSSM (Link Training and Status State Machine) transitions, performance metrics, 
+      and compliance standards. 
+      <br>
+      Claude then generated the documents in the <em>datasource</em> described below:
+      <ul>
+        <li><strong>NVMe SSD Controller</strong> - PCIe 4.0 x4 storage controller with 7,000 MB/s performance specifications</li>
+        <li><strong>GPU Graphics Accelerator</strong> - Ada Lovelace architecture with 9,728 CUDA cores and PCIe 4.0 x16 interface</li>
+        <li><strong>Network Interface Card</strong> - Dual-port 25 Gigabit Ethernet with SR-IOV virtualization support</li>
+        <li><strong>Audio Processing Unit</strong> - Professional audio interface with low-latency digital signal processing</li>
+        <li><strong>FPGA Development Card</strong> - Programmable logic device with high-speed transceivers</li>
+        <li><strong>USB Host Controller</strong> - USB 3.2 controller with backwards compatibility and power management</li>
+      </ul>
+
+      Each document contains comprehensive technical details including:
+      <ul>
+        <li><strong>Hardware Specifications:</strong> Vendor IDs, device IDs, subsystem information</li>
+        <li><strong>PCIe Configuration:</strong> Lane count, speed specifications, version compatibility</li>
+        <li><strong>Power Management:</strong> D-states (D0, D3hot, D3cold) with specific power consumption values</li>
+        <li><strong>LTSSM States:</strong> Link Training and Status State Machine transitions (L0, L0s, L1, L2, L3)</li>
+        <li><strong>Performance Metrics:</strong> Throughput, latency, OPS where applicable</li>
+        <li><strong>Advanced Features:</strong> AER, encryption capabilities</li>
+      </ul>
+      <br> 
+    </section>
+
+    <section id="agent_configuration">
+      <hr>
+      <h3>Agent Configuration & Prompts</h3>
+
+      Tony's personality, capabilities, and behavior are defined through carefully crafted system instructions and configuration parameters that balance technical accuracy with conversational naturalness.
+      <br><br>
+
+      <h5>Primary System Instruction</h5>
+      The core system prompt establishes Tony's identity, capabilities, and operational guidelines. Tony is positioned as 
+      "a helpful AI assistant specializing in PCIe endpoint specifications while also handling general technical questions."
+      <br>
+      The prompt emphasizes using the knowledge base for PCIe-specific queries, leveraging conversation context for query 
+      augmentation, synthesizing information into natural dialogue, and providing helpful responses without declining to answer questions.
+
+      The system instruction embodies several important design decisions:
+      <ul>
+        <li><em>Helpful Identity:</em> Tony is explicitly positioned as helpful and approachable, encouraging user engagement</li>
+        <li><em>Dual Competency:</em> Clear delineation between domain-specific (PCIe) knowledge and general technical assistance</li>
+        <li><em>Contextual Intelligence:</em> Explicit instruction to leverage conversation history for query enhancement</li>
+        <li><em>Natural Dialogue:</em> Emphasis on synthesizing technical information into conversational responses rather than raw data dumps</li>
+        <li><em>Never Refuse:</em> Commitment to always providing some form of helpful response, even for edge cases</li>
+      </ul>
+      <br>
+
+      <h5>Initial Greeting & Session Management</h5>
+      Tony's first interaction establishes the conversation tone and sets user expectations with a welcoming message: "Hello! I'm Tony, 
+      ready to help you find information from my knowledge base about PCIe Endpoints, or answer any other general questions."
+
+      The greeting is triggered automatically upon WebRTC connection through an event handler that queues the
+       initial LLM response frame and logs the client connection for monitoring purposes, enforced by a direct "user" directed prompt before the first STT transaction.
+      <br><br>
+    </section>
+
+    <section id="results">
+      <hr>
+      <h2>Results & Analysis</h2>
+      <br>
+      <div style="text-align: center;">
+        <video width="75%" controls style="max-width: 900px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <source src="./PCIe_agent_full_demo.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+
+      <br>
+
+      <h5>Demo Walkthrough</h5>
+      <ul>
+        <li>
+          <strong>0:23 - Boot up and Hard-Coded Introduction from Tony</strong>
+          <ul>
+            <li>Encouraged as a non-verbal user command added to context along with initial system prompt.</li>
+          </ul>
+        </li>
+        <br>
+        <li>
+          <strong>0:28 - Ask for information about "Memory Architecture of audio processing PCIe endpoint"</strong>
+          <ul>
+            <li>RAG successfully retrieves relevant chunks from audio_processing_unit.txt and LLM synthesizes correct response</li>
+          </ul>
+        </li>
+        <br>
+        <li>
+          <strong>1:19 - Interrupt Tony mid-sentence, ask unrelated question: "For the FPGA Development Card, what is the maximum lane width?"</strong>
+          <ul>
+            <li>RAG successfully retrieves relevant chunks from fpga_development_card.txt and LLM synthesizes correct response</li>
+          </ul>
+        </li>
+        <br>
+        <li>
+          <strong>1:44 - Interrupt Tony mid-sentence, ask new question: "What is the Vendor ID?"</strong>
+          <ul>
+            <li>LLM successfully infers that still talking about FPGA Development Card (as encouraged by system prompt); LLM augments RAG query to successfully retrieve relevant chunks from fpga_development_card.txt and synthesizes correct response</li>
+          </ul>
+        </li>
+        <br>
+        <li>
+          <strong>2:00 - Interrupt Tony mid-sentence, ask unrelated question: "For the Graphics GPU endpoint, how many CUDA cores are there and how many Tensor cores?"</strong>
+          <ul>
+            <li>RAG successfully retrieves relevant chunks from gpu_graphics_accelerator.txt and LLM synthesizes correct response</li>
+          </ul>
+        </li>
+      </ul>
+      <br>
+    </section>
+
+    <section id="theory">
+      <hr>
+      <h2>Theory Explanations</h2>
+    </section>
+
+    <section id="rag_theory">
+      <hr>
+      <h3>Retrieval-Augmented Generation (RAG) & Vector Search Theory</h3>
+
+      Retrieval-Augmented Generation represents a paradigm shift in how language models access and utilize external 
+      knowledge, addressing the fundamental limitations of parametric knowledge storage in neural networks.
+      <br><br>
+
+      <h5>The Knowledge Problem in Language Models</h5>
+      Traditional language models store knowledge implicitly in their parameters during training, leading to several limitations:
+      <ul>
+        <li><strong>Knowledge Cutoff:</strong> Information is frozen at training time, becoming stale</li>
+        <li><strong>Hallucination:</strong> Models can generate plausible but factually incorrect information</li>
+        <li><strong>Domain Specificity:</strong> Limited performance on specialized or niche topics not well-represented in training data</li>
+        <li><strong>Attribution:</strong> Difficult to trace responses back to specific sources</li>
+      </ul>
+
+      <h5>RAG Architecture & Mathematical Foundation</h5>
+      RAG combines the fluency of pre-trained language models with the accuracy of information retrieval systems. The mathematical formulation can be expressed as:
+
+      $$P(y|x) = \sum_{z \in \mathcal{Z}} P(z|x) \cdot P(y|x,z)$$
+
+      where:
+      <ul>
+        <li>$x$ is the input query</li>
+        <li>$y$ is the generated response</li>
+        <li>$z$ represents retrieved document chunks from knowledge base $\mathcal{Z}$</li>
+        <li>$P(z|x)$ is the retrieval probability (relevance score)</li>
+        <li>$P(y|x,z)$ is the generation probability given both query and retrieved context</li>
+      </ul>
+
+      <h5>The RAG Pipeline Process</h5>
+      The RAG process follows a systematic approach:
+
+      $$\text{Query} \xrightarrow{\text{Embedding}} \text{Query Vector} \xrightarrow{\text{Similarity Search}} \text{Relevant Chunks}$$
+      $$\xrightarrow{\text{Context Assembly}} \text{Augmented Prompt} \xrightarrow{\text{LLM Generation}} \text{Grounded Response}$$
+
+      <strong>Step 1: Query Encoding</strong>
+      $$q_{emb} = f_{encoder}(x)$$
+      The user query is transformed into a dense vector representation using the same embedding model used for document encoding.
+      <br><br>
+      <strong>Step 2: Similarity Search</strong>
+      $$\text{sim}(q_{emb}, d_i) = \frac{q_{emb} \cdot d_i}{||q_{emb}|| \cdot ||d_i||}$$
+      Cosine similarity identifies the most relevant document chunks from the vector database.
+      <br>
+      L2-normalized vectors ensure similarity scores are bounded between -1 (vectors are unaligned) and 1 (vectors are aligned). 
+      <br><br>
+      <strong>Step 3: Context Assembly</strong>
+      $$\text{augmented_prompt} = \text{instruction} + \text{context}_{1:k} + \text{query}$$
+      <br>
+      <strong>Step 4: Response Generation</strong>
+      <br>
+      The LLM generates a response conditioned on both the query and retrieved context:
+      <br>
+      $$y = \text{LLM}(\text{augmented_prompt})$$
+      <br><br>
+
+      <h5>Hierarchical Navigable Small World (HNSW) Index</h5>
+      In <strong>K-Nearest Neighbors (KNN)</strong>, we need to compute the cosine similarity between the query embedding and every single chunk embedding, and then pick the top 
+      $K$ most similar chunks. However, this has $O(N)$ computation per query, where $N$ is the number of chunks.
+      <br><br>
+      As this gets too costly for large context spaces, <strong>Approximate Nearest Neighbor (ANN)</strong> search in high-dimensional spaces is preferred,
+      which instead on average has an $O(\log N)$ average complexity.
+      <br><br>
+
+      <strong>HNSW</strong> is the dominant indexing algorithm for ANN. The strategy consists of creating a "Probability Skip List" by
+      creating a multi-layer proximity graph. 
+      One starts from the top layer at the entry node and greedily walk to closer nodes until no closer neighbor exists.
+      They then drop down layer by layer, using the best candidate from the previous layer as the new starting point.
+      At the final bottom layer, a more thorough neighbor exploration takes place to produce top-$k$ neighbors.
+      The graph search aims to reduce the number of steps we take to get to our final set of neighbors while sacrificing some accuracy in finding the true closest neighbors.
+      <br><br>
+
+      <h5>Hybrid Search Architecture</h5>
+      Hybrid search combines semantic understanding with precise keyword matching:
+
+      $$\text{HybridScore}(q, d) = \alpha \cdot \text{VectorSim}(q, d) + (1-\alpha) \cdot \text{KeywordScore}(q, d)$$
+
+      where $\alpha$ is a weighting parameter balancing semantic vs keyword importance.
+      <br>
+
+      The hybrid search process runs semantic and keyword branches in parallel. The semantic branch generates query embeddings and searches 
+      the HNSW index for 20 results, while the keyword branch does keyword matching for 20 term-matching results. 
+      <br>
+      Score fusion then combines both sets using weighted alpha scoring and rank fusion to produce final results.
+      <br>
+      <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background-color: #f2f2f2;">
+          <th style="border: 1px solid #ddd; padding: 12px; text-align: left;"><strong>Search Type</strong></th>
+          <th style="border: 1px solid #ddd; padding: 12px; text-align: left;"><strong>Query Example</strong></th>
+          <th style="border: 1px solid #ddd; padding: 12px; text-align: left;"><strong>Best For</strong></th>
+          <th style="border: 1px solid #ddd; padding: 12px; text-align: left;"><strong>Limitations</strong></th>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Semantic Only</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">"power consumption patterns"</td>
+          <td style="border: 1px solid #ddd; padding: 12px;">Conceptual queries, synonyms</td>
+          <td style="border: 1px solid #ddd; padding: 12px;">May miss exact technical terms</td>
+        </tr>
+        <tr style="background-color: #f9f9f9;">
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Keyword Only</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">"PCIe 4.0 x16 lanes"</td>
+          <td style="border: 1px solid #ddd; padding: 12px;">Exact specifications, model numbers</td>
+          <td style="border: 1px solid #ddd; padding: 12px;">No understanding of context/meaning</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 12px;"><strong>Hybrid</strong></td>
+          <td style="border: 1px solid #ddd; padding: 12px;">"GPU power efficiency"</td>
+          <td style="border: 1px solid #ddd; padding: 12px;">Balance of precision and recall</td>
+          <td style="border: 1px solid #ddd; padding: 12px;">Complex scoring, higher latency</td>
+        </tr>
+      </table>
+
+      <br> <br>
+    </section>
+
+    <section id="vad_theory">
+      <hr>
+      <h3>Voice Activity Detection (VAD) Theory</h3>
+
+      Voice Activity Detection is a fundamental component in real-time speech processing systems, responsible for distinguishing 
+      between speech segments and non-speech audio (silence, background noise, music). VAD enables efficient resource utilization and natural 
+      conversation flow by preventing unnecessary processing of ambient sound.
+      <br><br>
+
+      <h5>VAD Problem Statement</h5>
+      Given an audio signal $x(t)$, VAD aims to classify each time frame as either speech or non-speech:
+
+      $$\text{VAD}: x(t) \rightarrow \{0, 1\}$$
+
+      where:
+      <ul>
+        <li>$0$ represents non-speech (silence, noise, music)</li>
+        <li>$1$ represents speech activity</li>
+      </ul>
+      In Tony's architecture, VAD interacts with Pipecat by queuing audio chunks for processing only when speech is detected.
+      <br>
+      Analogously, the VAD stops streaming audio chunks to STT when $\text{EndOfSpeech} = \text{VAD}(t) = 0 \text{ for duration } > \tau_{\text{timeout}}$, ie
+      when VAD detects silence for longer than timeout threshold $\tau_{\text{timeout}}$, the system interprets this as end-of-utterance.
+      VAD enables significant computational savings by skipping STT processing and LLM inference when non-speech is detected.
+      <br><br>
+
+      <h5>Silero VAD Architecture</h5>
+      Silero VAD, used in Tony's system, represents the evolution from traditional statistical approaches to modern neural network-based 
+      voice activity detection. Common implementations of Silero-style VAD use convolutional front-ends followed by fully-connected layers that output frame-level speech probabilities.
+      <br><br>
+
+      <strong>From Traditional to Neural VAD:</strong>
+      Traditional VAD methods relied on handcrafted features and statistical thresholds. These classical approaches analyzed audio characteristics such as:
+      <ul>
+        <li><strong>Energy-based detection:</strong> Measuring signal amplitude, where speech frames typically have higher energy than silence</li>
+        <li><strong>Zero-crossing rate (ZCR):</strong> Counting how often the audio signal crosses zero amplitude, using the sign function (sgn) which returns -1, 0, or +1 based on whether the input is negative, zero, or positive respectively</li>
+        <li><strong>Spectral features:</strong> Analyzing frequency characteristics like spectral centroid (center of frequency mass) and rolloff points</li>
+      </ul>
+
+      While effective in controlled environments, these statistical methods struggled with background noise, varying speakers, and complex acoustic conditions. Neural networks overcome these limitations by learning robust feature representations directly from data.
+      <br><br>
+
+      <strong>Audio Preprocessing and Feature Extraction:</strong>
+      Silero VAD implements a sophisticated feature extraction pipeline with detailed audio processing steps:
+      <br>
+      <ul>
+        <li>
+          <em>Frame-based Processing:</em> Audio is divided into overlapping windows for analysis:
+          <ul>
+            <li><strong>Frame length:</strong> The size of each audio window being analyzed (typically 512 samples). At a 16 kHz sampling rate, this represents 32 milliseconds of audio - long enough to capture speech characteristics but short enough for real-time processing</li>
+            <li><strong>Hop size:</strong> The step size between consecutive frames (typically 256 samples or 16ms). This creates 50% overlap between frames, ensuring no speech information is lost between frame boundaries</li>
+            <li><strong>Sample rate:</strong> 16 kHz provides sufficient frequency resolution for speech (covering 0-8000 Hz) while maintaining computational efficiency</li>
+          </ul>
+        </li>
+
+        <li>
+          <em>Mel-spectrogram Features:</em> The system converts time-domain audio to frequency-domain representations that match human auditory perception:
+          <ul>
+            <li><strong>Mel-spectrogram:</strong> A time-frequency representation where frequency bins are spaced according to the mel scale, which approximates how humans perceive pitch. Lower frequencies get more detailed representation since humans are more sensitive to changes in lower frequencies</li>
+            <li><strong>FFT analysis:</strong> 512-point Fast Fourier Transform converts each frame from time domain to frequency domain</li>
+            <li><strong>Mel filtering:</strong> 40 triangular filters spanning 0-8000 Hz map linear frequencies to perceptually-motivated mel frequencies using the formula: mel(f) = 2595 log₁₀(1 + f/700)</li>
+            <li><strong>Logarithmic compression:</strong> Takes the log of mel filter outputs to compress the dynamic range, similar to human auditory processing</li>
+          </ul>
+        </li>
+      </ul>
+      <br>
+      <strong>Neural Network Architecture:</strong>
+      <br>
+      Most production VADs use compact models optimized for low-latency CPU inference. A common pattern is:
+      <ul>
+        <li><strong>Convolutional layers:</strong> Extract local spectral patterns within each frame.</li>
+        <li><strong>Optional temporal modules:</strong> Small temporal convolution or lightweight recurrent units (if needed) to capture frame-to-frame context.</li>
+        <li><strong>Dense output layer:</strong> Produces a speech probability for each frame (sigmoid activation), allowing downstream logic to threshold or smooth probabilities rather than hard binary outputs.</li>
+      </ul>
+      <br>
+
+      Silero-style VADs are typically trained using binary cross-entropy (BCE) loss on frame-wise speech/non-speech labels:
+      $$L = -\frac{1}{N} \sum_{i=1}^{N} [y_i \log(p_i) + (1-y_i) \log(1-p_i)]$$
+      where $y_i$ is the ground-truth frame label and $p_i$ is the predicted probability.
+      <br><br>
+
+
+      Raw VAD predictions can be noisy, requiring temporal smoothing. Typical options include:
+      <ul>
+        <li>
+          <em>Exponential Moving Average (on probabilities):</em>
+          $$\hat{p}_t = \alpha \cdot p_t + (1-\alpha) \cdot \hat{p}_{t-1}$$
+          where $p_t$ is the model's predicted probability at time $t$ and $\hat{p}_t$ is the smoothed probability used for downstream decision-making.
+        </li>
+        <li>
+          <em>Hysteresis Thresholding:</em>
+          Prevents rapid switching between speech/non-speech by using separate 
+          thresholds for speech onset and speech offset. For example, a higher threshold for detecting speech onset and a lower threshold for continuing speech helps avoid chatter from brief noise bursts.
+        </li>
+      </ul>
+      <br> <br>
+    </section>
+
+    <section id="stt_theory">
+      <hr>
+      <h3>Speech-to-Text (STT) Theory</h3>
+
+      Speech-to-Text (STT) technology transforms acoustic speech signals into written text, serving as the bridge between human speech and natural language processing systems. Modern STT systems employ deep neural networks to achieve near-human accuracy across diverse speakers, languages, and acoustic conditions.
+      <br><br>
+
+      <h5>Deepgram Nova-3 Architecture</h5>
+      Deepgram's Nova-3, used in Tony's system, deploys modern end-to-end neural architecture for STT.
+      <br><br>
+
+      <strong>From Traditional to Neural ASR:</strong>
+      Classical automatic speech recognition (ASR) systems relied on separate, hand-engineered components that had to be individually optimized:
+      <ul>
+        <li><strong>Feature extraction:</strong> Converting raw audio to representations like Mel-Frequency Cepstral Coefficients (MFCCs) that capture speech characteristics while discarding irrelevant information</li>
+        <li><strong>Acoustic modeling:</strong> Using Hidden Markov Models (HMMs) with Gaussian Mixture Models (GMMs) to model the relationship between audio features and phonemes (basic speech sounds)</li>
+        <li><strong>Language modeling:</strong> N-gram statistical models that predict word sequences based on previous words, requiring separate training on large text corpora</li>
+        <li><strong>Decoding:</strong> Complex search algorithms like Viterbi to find the most likely word sequence given the acoustic and language model scores</li>
+      </ul>
+
+      While functional, these classical systems struggled with accent variation, background noise, and required extensive domain-specific tuning. 
+      Neural networks overcome these limitations by learning optimal feature representations and mapping functions directly from data through end-to-end training.
+      <br><br>
+
+      <strong>Audio Preprocessing and Feature Extraction:</strong>
+      Nova-3 implements sophisticated audio preprocessing that transforms raw waveforms into representations suitable for neural processing:
+      <br>
+      <ul>
+        <li>
+          <em>Time-Frequency Analysis:</em> Raw audio signals are converted to spectral representations:
+          <ul>
+            <li><strong>Short-Time Fourier Transform (STFT):</strong> Divides audio into overlapping windows and applies FFT to each, creating a spectrogram that shows how frequencies change over time. This captures both the harmonic content of speech and temporal dynamics of phoneme transitions</li>
+            <li><strong>Window parameters:</strong> Typically 25ms windows with 10ms hop size, providing good time-frequency resolution trade-off for speech analysis</li>
+            <li><strong>Spectrogram computation:</strong> $S(f,t) = |\text{STFT}(x[n])|^2$ where the magnitude represents energy at each frequency and time</li>
+          </ul>
+        </li>
+        <li>
+          <em>Perceptual Feature Transformation:</em> Spectrograms are converted to perceptually-motivated representations:
+          <ul>
+            <li><strong>Mel-scale filtering:</strong> Linear frequency bins are mapped to the mel scale using $\text{mel}(f) = 2595 \log_{10}(1 + f/700)$, which approximates human auditory perception. Humans are more sensitive to changes in lower frequencies, so the mel scale provides higher resolution in speech-critical frequency ranges</li>
+            <li><strong>Filter bank application:</strong> Triangular filters spanning the mel scale aggregate spectral energy into perceptually-relevant bands, typically 80-128 mel bins covering 0-8000 Hz</li>
+            <li><strong>Mel-filter bank responses:</strong> $H_m(f)$ represents the response of the $m$-th triangular filter at frequency $f$. Each filter has a triangular shape with a peak at its center frequency and slopes down to zero at adjacent filter boundaries, ensuring smooth transitions between mel bands while concentrating energy measurement around perceptually-relevant frequencies</li>
+            <li><strong>Logarithmic compression:</strong> Log-mel features $\text{LogMel}(m,t) = \log(1 + \sum_f S(f,t) \cdot H_m(f))$ compress the dynamic range, matching human perception of loudness</li>
+            <li><strong>Feature normalization:</strong> Zero-mean, unit-variance normalization across utterances improves neural network training stability</li>
+          </ul>
+        </li>
+      </ul>
+      <br>
+
+      <strong>Neural Network Architecture:</strong>
+      Nova-3 employs a transformer-based encoder-decoder architecture that processes sequential audio features and generates text outputs:
+      <br>
+      <ul>
+        <li>
+          <em>Audio Encoder:</em> Transforms log-mel features into contextualized acoustic representations:
+          <ul>
+            <li><strong>Convolutional front-end:</strong> Initial CNN layers with 2D convolutions extract local acoustic patterns within spectrograms, detecting features like formant transitions, voice onset times, and spectral edges that characterize different phonemes</li>
+            <li><strong>Positional encoding:</strong> Since transformers lack inherent sequential order, sinusoidal position encodings are added to input features to preserve temporal relationships critical for speech understanding</li>
+            <li><strong>Multi-head self-attention:</strong> The core transformer mechanism where attention weights $\alpha_{i,j} = \text{softmax}(\frac{Q_i K_j^T}{\sqrt{d_k}})$ allow the model to focus on relevant acoustic context. Multiple attention heads capture different types of dependencies (phonetic, prosodic, speaker characteristics)</li>
+            <li><strong>Feed-forward networks:</strong> Position-wise MLPs with ReLU activations process the attended representations, providing additional modeling capacity</li>
+            <li><strong>Layer normalization and residuals:</strong> Stabilize training and enable deep architectures (typically 12-24 encoder layers)</li>
+          </ul>
+        </li>
+          
+        <li>
+          <em>Text Decoder:</em> Generates transcription text from encoder representations:
+          <ul>
+            <li><strong>Subword tokenization:</strong> Uses Byte-Pair Encoding (BPE) or SentencePiece to handle vocabulary efficiently. Subword units can represent both common words and rare technical terms like "PCIe" or "LTSSM" without requiring enormous vocabularies</li>
+            <li><strong>Cross-attention mechanism:</strong> Decoder attention layers attend to encoder outputs, learning which acoustic segments correspond to each generated token. This handles the alignment between variable-length audio and text</li>
+            <li><strong>Beam search decoding:</strong> Maintains multiple candidate hypotheses during text generation, selecting the sequence with highest probability. Beam width typically 4-8 for real-time applications</li>
+            <li><strong>Length normalization:</strong> Prevents bias toward shorter sequences during beam search</li>
+          </ul>
+        </li>
+      </ul>
+      <br>
+
+      <strong>Training and Optimization:</strong>
+      Nova-3's training employs multiple objective functions and advanced techniques:
+      <ul>
+        <li><strong>Multi-task learning:</strong> Jointly trains on speech recognition, punctuation restoration, capitalization, and number formatting, allowing shared representations to improve all tasks</li>
+        <li><strong>Connectionist Temporal Classification (CTC):</strong> Enables training without requiring precise alignments between audio frames and text tokens, handling the temporal compression from audio (thousands of frames) to text (tens of words)</li>
+        <li><strong>Cross-entropy loss:</strong> Standard sequence-to-sequence training objective for text generation quality</li>
+        <li><strong>Data augmentation:</strong> Speed perturbation (0.9x to 1.1x), noise injection, and room simulation improve robustness to real-world conditions</li>
+        <li><strong>Domain adaptation:</strong> Fine-tuning on technical conversations, customer service calls, and domain-specific terminology ensures accurate transcription of specialized vocabulary</li>
+      </ul>
+      <br>
+
+      <strong>Smart Formatting Capabilities:</strong>
+      Beyond raw transcription, Nova-3 includes neural modules for text enhancement:
+      <ul>
+        <li><strong>Punctuation restoration:</strong> BERT-based models predict punctuation marks based on linguistic context: $P(\text{punct}|w_i, \text{context}) = \text{softmax}(\text{MLP}(\text{BERT}(w_i, \text{context})))$</li>
+        <li><strong>Capitalization:</strong> Proper nouns identified through named entity recognition, sentence boundaries capitalized, technical acronyms handled through pattern matching (e.g., "pci e" → "PCIe")</li>
+        <li><strong>Number formatting:</strong> "Twenty three" → "23", "first" → "1st", "sixteen point zero" → "16.0" using rule-based and neural approaches</li>
+        <li><strong>Inverse text normalization:</strong> Converts spoken form to written form for dates, times, currencies, and technical measurements</li>
+      </ul>
+
+      <br> <br>
+    </section>
+
+    <section id="tts_theory">
+      <hr>
+      <h3>Text-to-Speech (TTS) Theory</h3>
+
+      Text-to-Speech (TTS) synthesis transforms written text into natural-sounding human speech, serving as the final 
+      component in Tony's voice interaction pipeline. Modern neural TTS systems achieve near-human quality through sophisticated modeling of acoustic features, prosody, and speaker characteristics.
+      <br><br>
+
+      <h5>Deepgram Aura-2 Architecture</h5>
+
+      <strong>From Traditional to Neural TTS:</strong>
+      Classical TTS systems relied on separate, hand-engineered stages that had to be individually optimized:
+      <ul>
+        <li><strong>Text normalization:</strong> Converting written text like "123" to spoken form "one hundred twenty three", handling abbreviations, dates, and special characters through rule-based systems</li>
+        <li><strong>Grapheme-to-Phoneme (G2P):</strong> Converting spelling to pronunciation using phonemes - the basic units of speech sound like /p/, /a/, /t/ for "pat". Dictionary lookups and rules determined how words should be pronounced</li>
+        <li><strong>Prosody prediction:</strong> Determining stress patterns, pitch accents, and phrase boundaries using linguistic rules and heuristics</li>
+        <li><strong>Acoustic modeling:</strong> Statistical models (HMMs with decision trees) predicted acoustic features from linguistic inputs</li>
+        <li><strong>Vocoding:</strong> Signal processing techniques converted acoustic parameters to waveforms using source-filter models that separated excitation from vocal tract filtering</li>
+      </ul>
+
+      While functional, these classical systems produced robotic-sounding speech with unnatural prosody and struggled with 
+      speaker variation and expressiveness. Neural networks overcome these limitations by learning complex mappings from text to natural speech directly from data.
+
+      <strong>Aura-2's Four-Stage Neural Pipeline:</strong>
+      Aura-2 employs a sophisticated multi-stage architecture that generates high-quality speech through sequential neural processing:
+      <br><br>
+
+      <u>Stage 1: Text Encoder</u>
+      <br>
+      The text encoder transforms raw text into rich linguistic representations suitable for speech synthesis:
+      <ul>
+        <li><strong>Character/phoneme embeddings:</strong> Input text is converted to learned vector representations. Some systems use graphemes (letters) while others use phonemes for more explicit pronunciation control</li>
+        <li><strong>Text normalization layer:</strong> Neural modules handle number expansion, abbreviation resolution, and text cleaning automatically</li>
+        <li><strong>Transformer encoder layers:</strong> Multiple self-attention layers capture long-range linguistic dependencies:
+          $$h_i = \text{LayerNorm}(x_i + \text{MultiHeadAttention}(x_i))$$
+          where transformer layers learn contextual relationships between words and phrases</li>
+        <li><strong>Linguistic feature extraction:</strong> The encoder implicitly learns phonetic, syntactic, and semantic information that influences pronunciation and prosody</li>
+        <li><strong>Positional encoding:</strong> Sinusoidal or learned position embeddings preserve word order information critical for proper intonation</li>
+      </ul>
+      <br>
+
+      <u>Stage 2: Duration Predictor</u>
+      <br>
+      The duration predictor determines how long each phoneme or character should be spoken, enabling non-autoregressive parallel generation:
+      <ul>
+        <li><strong>Duration prediction network:</strong> $$d_i = \text{DurationPredictor}(h_i, \text{context})$$ where $d_i$ is the predicted duration for linguistic unit $i$</li>
+        <li><strong>Non-autoregressive advantage:</strong> By predicting all durations upfront, the model can generate mel-spectrograms in parallel rather than sequentially, dramatically reducing latency from seconds to milliseconds</li>
+        <li><strong>Length regulation:</strong> Predicted durations expand the linguistic features to match the acoustic frame rate, creating monotonic 
+          alignment between text and speech: 
+          $$\text{expanded_features} = \text{Expand}(h, d)$$</li>
+        <li><strong>Speaking rate control:</strong> Duration scaling enables speed adjustment: $d_{\text{scaled}} = \alpha \cdot d$ where $\alpha > 1$ slows speech and $\alpha < 1$ speeds it up</li>
+        <li><strong>Natural rhythm:</strong> The predictor learns language-specific timing patterns like stressed syllables being longer than unstressed ones</li>
+      </ul>
+      <br>
+
+      <strong>Stage 3: Acoustic Model (Mel-Spectrogram Generation)</strong>
+      <br>
+      The acoustic model generates mel-spectrograms - intermediate acoustic representations that capture speech characteristics in a form easier for neural networks to model than raw waveforms:
+      <br>
+
+      <em>Mel-Spectrograms:</em>
+      <ul>
+        <li><strong>Time-frequency representation:</strong> Mel-spectrograms show how acoustic energy is distributed across frequencies over time.</li>
+        <li><strong>Mel-scale transformation:</strong> Uses the perceptually-motivated mel scale $\text{mel}(f) = 2595 \log_{10}(1 + f/700)$ where lower frequencies get more detailed representation since human hearing is more sensitive to differences in lower pitches</li>
+        <li><strong>Mel-spectrogram generation formula:</strong> $$M(m,t) = \sum_{f=0}^{F-1} |S(f,t)|^2 \cdot H_m(f)$$ where $S(f,t)$ is the Short-Time Fourier Transform (STFT), $H_m(f)$ are triangular mel-filter bank responses, and $M(m,t)$ represents mel-frequency energy at time $t$</li>
+        <li><strong>Advantages for TTS:</strong> Mel-spectrograms are more compact than raw spectrograms (80-128 dimensions vs thousands), smoother for neural networks to generate, and perceptually aligned with human auditory processing</li>
+      </ul>
+
+      <em>Transformer-based Decoder:</em>
+      <ul>
+        <li><strong>Decoder architecture:</strong> Multi-layer transformer decoder with self-attention on previously generated frames and cross-attention to encoded linguistic features</li>
+        <li><strong>Mel-spectrogram prediction:</strong> The decoder generates mel-spectrograms frame-by-frame in non-autoregressive mode, predicting all time steps simultaneously for fast synthesis</li>
+        <li><strong>Frame structure:</strong> Each mel-spectrogram frame typically covers 12.5ms of audio with 80-128 mel-frequency bins, providing detailed spectral information</li>
+      </ul>
+      <br>
+
+      <strong>Stage 4: Neural Vocoder (Waveform Generation)</strong>
+      <br>
+      The neural vocoder converts mel-spectrograms to high-fidelity audio waveforms, representing the final synthesis stage:
+      <br>
+
+      <em>Vocoding Approaches:</em>
+      Aura-2 likely uses one of several modern vocoding architectures:
+      <ul>
+        <li><strong>WaveNet-based (Autoregressive):</strong>
+          <ul>
+            <li>Generates audio samples sequentially using dilated causal convolutions: $$P(y_t|y_{<t}, c) = \text{softmax}(\text{WaveNet}(y_{<t}, c_t))$$</li>
+            <li>Dilated convolutions with exponentially increasing dilation rates capture long-range dependencies efficiently</li>
+            <li>High quality but slower due to sequential generation (mitigated by parallel WaveNet variants)</li>
+          </ul>
+        </li>
+        <li><strong>GAN-based (Parallel):</strong>
+          <ul>
+            <li>Generator creates waveforms while discriminator distinguishes real vs synthetic audio</li>
+            <li>Adversarial training objective: $$\min_G \max_D \mathbb{E}_{x}[\log D(x)] + \mathbb{E}_{z}[\log(1 - D(G(z)))]$$</li>
+            <li>Much faster generation (real-time capable) with comparable quality to autoregressive models</li>
+            <li>Examples: HiFi-GAN, MelGAN using multi-scale discriminators for different frequency ranges</li>
+          </ul>
+        </li>
+        <li><strong>Flow-based (Invertible):</strong>
+          <ul>
+            <li>Normalizing flows create invertible mappings between mel-spectrograms and waveforms</li>
+            <li>Bidirectional transformation: $z = f_\theta(x)$ and $x = f_\theta^{-1}(z)$</li>
+            <li>Allows both synthesis and analysis through the same network</li>
+          </ul>
+        </li>
+      </ul>
+
+      <em>High-fidelity Audio Generation:</em>
+      <ul>
+        <li><strong>Sample rate:</strong> 24 kHz output provides broadcast-quality audio, capturing frequencies up to 12 kHz (well above the 8 kHz needed for speech intelligibility)</li>
+        <li><strong>Waveform quality:</strong> Neural vocoders generate phase-accurate waveforms that preserve naturalness, avoiding the buzzy artifacts of traditional vocoders</li>
+        <li><strong>Real-time capability:</strong> Optimized architectures achieve faster-than-real-time generation, critical for interactive applications</li>
+      </ul>
+
+      <br> <br>
+    </section>
+
+    <section id="code">
+      <hr>
+      <h2>Full Code</h2>
+      To interact with the conversational agent and/or provide your own RAG source instead of fictional PCIe Endpoint Specifications, please see the 
+      <em><a href="https://github.com/arnavinator/pcie_rag_voice_agent" target="_blank">code repository here</a></em>. 
+
+      <br> <br>
+    </section>
+
+
+
+
+  </div>
+
+  <!-- Back-to-Top button -->
+  <div id="backToTop" title="Go to top">  Back to Top ▲  </div>
+  <script>
+    // Get the button
+    const backToTopBtn = document.getElementById('backToTop');
+  
+    // 1) Show/hide button when scrolling
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        // If scrolled more than 300px, show the button
+        backToTopBtn.classList.add('show');
+        backToTopBtn.classList.remove('hide');
+      } else {
+        // Otherwise, hide it
+        backToTopBtn.classList.add('hide');
+        backToTopBtn.classList.remove('show');
+      }
+    });
+  
+    // // scroll to top on hover
+    // backToTopBtn.addEventListener('mouseenter', () => {
+    //   window.scrollTo({ top: 0, behavior: 'smooth' });
+    // });
+
+    // scroll to top on click
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+
+  <script>
+    fetch("../dropdownL2.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("dropdown-content").innerHTML = html;
+      });
+  </script>
+
+</body>
+
+<footer class="footer-bar">
+  <div class="container text-center py-2">
+    <a
+      class="footer-link"
+      href="https://www.linkedin.com/in/arnav-srivastava/"
+      target="_blank"
+      rel="noopener"
+    >
+      <p class="fs-5">
+        Want to get in touch? Reach out to me on LinkedIn
+        <i class="bi bi-linkedin" style="font-size: 1.5rem;"></i>
+      </p>
+    </a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>
