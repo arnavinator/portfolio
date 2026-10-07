@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Arnav's Engineering Portfolio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="../style.css" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],       // inline delimiters
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],    // display delimiters
+        packages: ['base', 'ams']                       // load AMS TeX extensions
+      },
+      options: {
+        // ensure MathJax processes dynamically-added content
+        processHtmlClass: 'arithmatex',
+        skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-sm navbar-dark">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-5">
+      <h2 class="nav-title">Arnav's Engineering Portfolio</h2>
+      <div class="navbar-nav">
+        <a class="nav-link" href="../index.html">Home</a>
+        <a class="nav-link" href="../about.html">About Me</a>
+
+        <div class="nav-item dropdown">
+          <!-- now a normal in-page link -->
+          <a
+            class="nav-link active"
+            href="../index.html#selected-work"
+            id="projectsDropdown"
+            aria-expanded="false"
+          >
+            Selected Work <span style="margin-left:1px; font-size:0.99em;">▾</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectsDropdown" id="dropdown-content"></ul>
+        </div>
+
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero-section-proj">
+    <div class="textcontainer">
+      <h1 class="oswald-heading">
+        <u>Jitter-GRPO: New Research in Fine-Tuning Flow Matching VLAs</u>
+      </h1>
+      <h3 class="oswald-heading"><span style="color: rgb(242, 242, 242);">
+        Jitter noise to GRPO FM surrogate for PEFT on NVIDIA's Isaac GR00T VLA
+      </span></h3>
+
+      <h6><span style="color: rgb(242, 242, 242);">
+        <em>Skills: FIXME</em>
+      </span></h6>
+    </div>
+  </section>
+
+  <section class="textcontainer">
+    <h2 class="mb-4">Overview</h2>
+
+    <div class="row gx-0 mb-4 mt-4 align-items-center">
+      <div style="width: 38%; padding:0;" class="custom-column">
+      </div>
+
+      <div style="width: 24%; padding:0;" class="custom-column">
+        <figure style="margin: 0;">
+          <img src="./panda_omron_pic.jpg" class="img-fluid">
+          <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+            <em>Fig. 1: PandaOmron robot (Franka Panda arm on an Omron mobile base) in a RoboCasa kitchen</em>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div style="width: 38%; padding:0;" class="custom-column">
+      </div>
+
+    </div>
+
+    <div class="row gx-0 mb-4 mt-4 align-items-center">
+      <div style="width: 3%; padding:0;" class="custom-column">
+      </div>
+
+      <div style="width: 94%; padding:0;" class="custom-column">
+        <figure style="margin: 0;">
+          <video autoplay muted loop class="img-fluid">
+            <source src="./CoffeeServeMug_fail_vs_success_side_by_side_white_gap.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+          <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+            <em>Fig. 2: Failed (left) vs. successful (right) CoffeeServeMug rollouts, each shown from two exterior cameras and the wrist camera</em>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div style="width: 3%; padding:0;" class="custom-column">
+      </div>
+
+    </div>
+
+    FIXME
+
+  </section>
+
+  <div class="textcontainer">
+
+    <section class="table-of-contents">
+      <hr>
+
+      <h2 class="mb-3">Table of Contents</h2>
+      <ul>
+        <li><a href="#vla_peft_overview">VLA / PEFT Overview</a></li>
+        <li><a href="#motivation">Motivation: Investigating GR00T's Denoising</a></li>
+        <li><a href="#code">Full Code</a></li>
+      </ul>
+      <br>
+    </section>
+
+
+    <section id="vla_peft_overview">
+      <hr>
+      <h2>VLA / PEFT Overview</h2>
+
+      <h5>GR00T N1.6 on PandaOmron</h5>
+      <a href="https://github.com/NVIDIA/Isaac-GR00T" target="_blank">GR00T N1.6</a> is NVIDIA's open 3.3B-parameter vision-language-action (VLA) model.
+      Each query maps three camera images, the robot state, and a language instruction to a 16-step chunk of actions:
+
+      <figure style="margin: 20px 0; text-align: center;">
+        <pre class="diagram">
+ ┌───────────────┬─ re-plan with new observations ───┐
+ │               ▼                                   ▼
+ │    3 cameras + instruction                  state (16-d)
+ │               │                                   │
+ │               ▼                                   ▼
+ │  ┌───────────────────────────┐              state encoder
+ │  │ Eagle VLM  (1.9B, frozen) │                    │ 1 token
+ │  │ SigLIP2 + Qwen3-1.7B      │                    │
+ │  └────────────┬──────────────┘                    │
+ │               │ VL tokens (cross-attention)       │
+ │               ▼                                   ▼
+ │  <span class="lora">┌─────────────────────────────────────────────────────┐</span>
+ │  <span class="lora">│</span> <span class="lora">DiT action head  (1.1B, 32 blocks, LoRA)</span>            <span class="lora">│</span>◄──┐
+ │  <span class="lora">│</span> <span class="lora">51 tokens = 1 state + 50 action</span>                     <span class="lora">│</span>   │
+ │  <span class="lora">└──────────────────────────┬──────────────────────────┘</span>   │
+ │                             ▼                              │
+ │                      action decoder                 action encoder
+ │                             │ velocity v                   ▲
+ │                             ▼                              │
+ │                       a ← a + v/n ─────────── a ───────────┘
+ │                             │ <span class="note">a starts as noise;</span>
+ │                             │ <span class="note">a is complete after n=4 steps</span>
+ │                             ▼
+ │               action chunk: 16 steps × 12-d
+ │                             │
+ │                             ▼
+ └──────── robosuite OSC controller: execute 8 steps</pre>
+        <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+          <em>Fig. 3: One GR00T N1.6 query (green: the DiT, where LoRA is applied)</em>
+        </figcaption>
+      </figure>
+
+      <ul>
+        <li><strong>Eagle VLM backbone</strong> (1.9B, frozen): a SigLIP2 vision encoder and Qwen3-1.7B LLM (first 16 of 28 layers) embed the instruction
+          and images as 2048-d vision-language (VL) tokens, once per query.</li>
+        <li><strong>DiT action head</strong> (1.1B): 32 transformer blocks over 51 tokens (1 state + 50 action). Odd blocks self-attend; even blocks
+          cross-attend the VL tokens, alternating text and image tokens. AdaLayerNorm conditions every block on the flow-matching timestep: it is a LayerNorm whose scale and shift
+          are generated from the timestep embedding, $\mathrm{AdaLN}(x, \tau) = \mathrm{LayerNorm}(x) \odot (1 + \mathrm{scale}(\tau)) + \mathrm{shift}(\tau)$.</li>
+        <li><strong>Flow matching</strong>: starting from noise $a^{0} \sim \mathcal{N}(0, I)$, the DiT predicts a velocity $v_\theta(a^{\tau} \mid \tau, o)$
+          conditioned on the flow time $\tau$ and observation $o$, and $n$ Euler steps $a^{\tau + 1/n} = a^{\tau} + \tfrac{1}{n}\, v_\theta(a^{\tau} \mid \tau, o)$
+          carry the flow time $\tau$ from 0 to 1 (GR00T uses $n = 4$).</li>
+        <li><strong>Embodiment MLPs</strong>: the state encoder, action encoder, and action decoder keep separate weights per robot
+          (PandaOmron is embodiment 13); inputs and outputs are zero-padded to 128 dims.</li>
+      </ul>
+
+      For CoffeeServeMug, GR00T and PandaOmron exchange:
+      <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em;">
+        <tr style="background-color: #f2f2f2;">
+          <th></th>
+          <th>Signal</th>
+          <th>Notes</th>
+        </tr>
+        <tr>
+          <td style="vertical-align: top;"><strong>Cameras</strong> (3 × 256×256×3)</td>
+          <td>Left &amp; right exocentric views (2 × 256×256×3); wrist egocentric view (256×256×3)</td>
+          <td>Rendered at 512×512, resized to 256×256</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top;"><strong>State</strong> (16-d)</td>
+          <td>End-effector position (3-d) &amp; quaternion (4-d) relative to the base; gripper finger positions (2-d); base position (3-d) &amp; quaternion (4-d)</td>
+          <td>No joint angles or velocities</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top;"><strong>Language</strong></td>
+          <td>"pick the mug from under the coffee machine dispenser and place it on the counter"</td>
+          <td>Fixed throughout episode</td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top;"><strong>Action</strong> (16 × 12-d)</td>
+          <td>End-effector Δposition (3-d) &amp; Δrotation (3-d, axis-angle); gripper open/close (1-d); base velocity (3-d) &amp; torso height (1-d); arm/base mode (1-d)</td>
+          <td>Operational space control (OSC) deltas, not joint angles or torques</td>
+        </tr>
+      </table>
+
+      The policy runs at 20 Hz: PandaOmron executes the first 8 of the 16 predicted steps (0.4 s), then GR00T re-plans from new observations.
+      Robosuite's OSC controller converts each end-effector delta into joint torques. An episode succeeds once the gripper has released the mug
+      on the counter in the upright position.
+      <br><br>
+
+      <h5>LoRA Targets</h5>
+      Jitter-GRPO trains only LoRA adapters (rank $r = 16$, $\alpha = 32$) inside the DiT. Everything else stays frozen: the VLM backbone,
+      the embodiment MLPs (their 3-D per-embodiment weights don't fit standard LoRA), and each block's AdaLayerNorm projection.
+      <ul>
+        <li><strong>Each of the 32 blocks</strong>: attention <code>to_q</code>, <code>to_k</code>, <code>to_v</code>, <code>to_out</code>
+          and both feed-forward projections (6 modules).</li>
+        <li><strong>Output layers</strong>: <code>proj_out_1</code> (scale/shift of the final AdaLayerNorm) and <code>proj_out_2</code>
+          (projection into the action decoder).</li>
+        <li><strong>Total</strong>: 194 modules, 14.5M trainable parameters (0.44% of GR00T's 3.3B).</li>
+      </ul>
+
+      <div class="row gx-3 mb-4 mt-4">
+        <div class="col-xl-6">
+          <figure style="margin: 0; text-align: center;">
+            <pre class="diagram">
+═══════════════ ×32 BasicTransformerBlock ═══════════════
+   hidden_states [B, 51, 1536] ──────────────────┐ (skip)
+     │                                           │
+     ▼                                           │
+   norm1 = AdaLayerNorm(1536)  ◄── silu(temb)    │
+     │  .linear 1536 → 3072 → scale, shift       │
+<span class="note">#</span>    │    <span class="note">^ frozen, not a LoRA target</span>            │
+     │  .norm   LayerNorm (no affine)            │
+     ▼                                           │
+  ┌──────── SELF / CROSS ATTENTION ────────┐     │
+<span class="lora">+</span> │ <span class="lora">attn1.to_q      1536 → 1536</span>            │     │
+<span class="lora">+</span> │ <span class="lora">attn1.to_k      1536* → 1536</span>           │     │
+<span class="lora">+</span> │ <span class="lora">attn1.to_v      1536* → 1536</span>           │     │
+<span class="lora">+</span> │ <span class="lora">attn1.to_out.0  1536 → 1536</span>            │     │
+<span class="note">#</span> │ <span class="note">even: cross-attend VL tokens</span>           │     │
+<span class="note">#</span> │ <span class="note">  (idx%4==0 text, idx%4==2 image)</span>      │     │
+<span class="note">#</span> │ <span class="note">odd:  self-attend</span>                      │     │
+  └────────────────────────────────────────┘     │
+     ▼                                           │
+    (+) residual ◄───────────────────────────────┤ (skip)
+     ▼                                           │
+   norm3 = LayerNorm(1536)                       │
+  ┌───────── FEED FORWARD (GELU) ──────────┐     │
+<span class="lora">+</span> │ <span class="lora">ff.net.0.proj   1536 → 6144</span>            │     │
+<span class="lora">+</span> │ <span class="lora">ff.net.2        6144 → 1536</span>            │     │
+  └────────────────────────────────────────┘     │
+     ▼                                           │
+    (+) residual ◄───────────────────────────────┘
+═════════════════════════════════════════════════════════
+<span class="note"># * 2048 → 1536 in cross-attention blocks</span>
+<span class="note"># 6 LoRA modules × 32 blocks = 192 modules</span></pre>
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 4: LoRA targets (green) in each DiT block</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div class="col-xl-6">
+          <figure style="margin: 0; text-align: center;">
+            <pre class="diagram">
+   hidden_states [B, 51, 1536]  (after 32 blocks)
+     │
+     ▼
+  ┌─── FINAL AdaLayerNorm (inline in DiT.forward) ───┐
+  │ norm_out = LayerNorm(1536, no affine)            │
+<span class="note">#</span> │     │ <span class="note">the barrier: strips mean &amp; scale,</span>          │
+<span class="note">#</span> │     │ <span class="note">so a block ΔW that only rescales</span>           │
+<span class="note">#</span> │     │ <span class="note">the residual stream is erased</span>              │
+  │     │                 silu(temb)                 │
+  │     │                     │                      │
+<span class="lora">+</span> │     │                 <span class="lora">proj_out_1  1536 → 3072</span>    │
+  │     │                     │                      │
+  │     │                 .chunk(2) → shift, scale   │
+  │     ▼                     ▼                      │
+  │ norm_out(h) · (1 + scale) + shift                │
+<span class="note">#</span> │   <span class="note">gain + shift on all 51 output tokens</span>           │
+  └──────────────────────────────────────────────────┘
+     ▼
+<span class="lora">+</span>  <span class="lora">proj_out_2   1536 → 1024</span>   (output projection)
+     ▼   [B, 51, 1024]
+   action_decoder  (embodiment MLP, frozen)
+     ▼   drop the state token
+   velocity v  [B, 50, 128]</pre>
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 5: LoRA targets (green) in the DiT output layers</em>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <br>
+    </section>
+
+    <section id="motivation">
+      <hr>
+      <h2>Motivation: Investigating GR00T's Denoising</h2>
+
+      To see how GR00T turns noise into actions, I fixed one CoffeeServeMug observation (gripper approaching the mug), held every DiT input
+      except the noise constant, and denoised 100 noise seeds with the default 4 Euler steps.
+      Each line is one seed's cumulative end-effector delta over the 16-step chunk.
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 2%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width:35%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./scene_side_wrist.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 6: The fixed observation, from the left exocentric camera (left) and wrist camera (right)</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 2%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 25%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./fan_4step.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 7: 100 noise seeds, 4 Euler steps</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 2%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 25%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./fan_1step.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 8: The same 100 seeds, 1 Euler step</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 2%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 9.2%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 52.2%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./mean_4step_vs_1step.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 9: Mean over the 100 seeds, 4 steps (black) vs. 1 step (green)</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 6%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 23.4%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./fan_4step_seed305067.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 10: 100 seeds, 4 steps, in another episode</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 9.2%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      Three patterns stand out:
+      <ul>
+        <li><strong>Similar means:</strong> averaged over seeds, 1-step and 4-step chunks follow nearly the same path (Fig. 9).</li>
+        <li><strong>Extra Euler steps add spread</strong> (Figs. 7, 8):
+          <ul>
+            <li>Seed-to-seed variance is 1.61 with 4 steps vs. 0.025 with 1 step (summed over x, y, z): <strong>~65× larger</strong>.</li>
+            <li>A second observation, taken after the grasp, shows the same gap: 1.67 vs. 0.037 (<strong>~46×</strong>).</li>
+          </ul>
+        </li>
+        <li><strong>One fan, not several strategies:</strong> the seeds form a single unimodal fan around the mean (Figs. 7, 10),
+          not distinct groups of equally valid strategies.
+          <ul>
+            <li>The promise of flow-matching VLAs is <em>multimodality</em>: different noise samples should yield diverse, equally valid
+              behaviors. The observations measured here instead suggest GR00T behaves more like a <em>unimodal fan</em>.</li>
+          </ul>
+        </li>
+      </ul>
+      <br>
+      <h5>Is the mean a good action?</h5>
+      More granular denoising (more steps) leads to more spread in trajectories, but VLA still offers the mean trajectory as a valid 
+      trajectory (given the right noise draw). 
+      <br>
+      This begs the question: <em>is the mean trajectory in fact a good trajectory such that the VLA's "unimodal fan" justified</em> ? 
+      <br><br>
+      If the fan were centered on a good action, executing the chunk nearest its center should be good. To test this without touching any weights,
+      I designed and benchmarked a custom inference-time strategy,
+      <a href="https://github.com/arnavinator/Isaac-GR00T/tree/main/scripts/denoising_lab/eval/strategies/consensus_noise_mode_selection" target="_blank"><em>consensus noise-mode selection</em></a>: it samples several noise vectors per query,
+      denoises them in parallel, and executes the chunk closest to their consensus.
+      <div class="row gx-4 mt-3 justify-content-center">
+        <div class="col-lg-6">
+          <table class="table table-bordered table-sm" style="font-size: 0.9em;">
+            <tr style="background-color: #f2f2f2;">
+              <th>Denoising strategy</th>
+              <th>Success, seeds 100–129 × 3 runs each</th>
+            </tr>
+            <tr>
+              <td>Baseline: one noise sample, 4 Euler steps</td>
+              <td>48.9%</td>
+            </tr>
+            <tr>
+              <td>Chunk closest to the mean, 1 Euler step</td>
+              <td>46.7%</td>
+            </tr>
+            <tr>
+              <td>Chunk closest to the mean, 4 Euler steps</td>
+              <td>37.8%</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>Executing the consensus hurts:</strong> on seeds 100–129, success falls from 48.9% to 46.7% with 1-step candidates,
+          and to 35.8% with 4-step candidates.</li>
+        <li><strong>The fan's mean is usually <em>not</em> a good action</strong>, so the problem is the shape of the fan itself.</li>
+        <li><strong>A better fan</strong> is either <em>multi-modal</em> (several valid strategies) or a <em>tight unimodal fan</em>
+          around a good action.</li>
+      </ul>
+
+      <h5>From Diagnosis to Jitter-GRPO</h5>
+      That set the mission: reshape the fan by LoRA fine-tuning the DiT with online RL.
+      <ul>
+        <li><strong>GRPO</strong> gives stable, PPO-style clipped updates. Advantages come from comparing rollouts within a group, so no value
+          function is needed.</li>
+        <li><strong>Jitter</strong> trains on neighboring noise too: each update also feeds the DiT small jitters of the sampled noise.
+          The hypothesis is that this carves stronger basins, pulling nearby noise toward good chunks and pushing it away from bad ones,
+          so <u>random noise sample lands on a good action more often.</u></li>
+      </ul>
+      <br>
+    </section>
+
+    <section id="code">
+      <hr>
+      <h2>Full Code</h2>
+      FIXME
+      <br> <br>
+    </section>
+
+
+  </div>
+
+  <!-- Back-to-Top button -->
+  <div id="backToTop" title="Go to top">  Back to Top ▲  </div>
+  <script>
+    // Get the button
+    const backToTopBtn = document.getElementById('backToTop');
+
+    // 1) Show/hide button when scrolling
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        // If scrolled more than 300px, show the button
+        backToTopBtn.classList.add('show');
+        backToTopBtn.classList.remove('hide');
+      } else {
+        // Otherwise, hide it
+        backToTopBtn.classList.add('hide');
+        backToTopBtn.classList.remove('show');
+      }
+    });
+
+    // // scroll to top on hover
+    // backToTopBtn.addEventListener('mouseenter', () => {
+    //   window.scrollTo({ top: 0, behavior: 'smooth' });
+    // });
+
+    // scroll to top on click
+    backToTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+
+  <script>
+    fetch("../dropdownL2.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("dropdown-content").innerHTML = html;
+      });
+  </script>
+
+</body>
+
+<footer class="footer-bar">
+  <div class="container text-center py-2">
+    <a
+      class="footer-link"
+      href="https://www.linkedin.com/in/arnav-srivastava/"
+      target="_blank"
+      rel="noopener"
+    >
+      <p class="fs-5">
+        Want to get in touch? Reach out to me on LinkedIn
+        <i class="bi bi-linkedin" style="font-size: 1.5rem;"></i>
+      </p>
+    </a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" ></script>
+
+</html>

@@ -165,7 +165,8 @@ nav {
 /* Section for 'Selected Work' */
 .selected-work-section {
   /* background-color: white; */
-  padding: 2rem 1rem;
+  /* no bottom padding, so the first row of videos peeks above the fold */
+  padding: 2rem 1rem 0;
   text-align: center;
 }
 
@@ -182,6 +183,7 @@ nav {
 .selected-work-quote {
   font-family: 'Caveat', cursive;
   font-size: 1.6rem;
+  margin-bottom: 0;       /* drop the default <p> gap above the grid */
   color: #000;
 }
 
@@ -286,6 +288,30 @@ code {
   color: #EEE7E8;
   /* Monospace font for code readability */
   font-family: 'Courier New', Courier, monospace;
+}
+
+/* Terminal-style ASCII diagrams (box-drawing characters need a font that has them) */
+pre.diagram {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  background-color: #2d2b33;   /* same as inline code */
+  color: #EEE7E8;
+  font-family: Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: left;
+}
+
+/* Green for LoRA-adapted layers, gray for annotations */
+pre.diagram .lora {
+  color: #7bd88f;
+}
+
+pre.diagram .note {
+  color: #a39fae;
 }
 
 /* Caption text under images or figures */
