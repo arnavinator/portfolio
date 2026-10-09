@@ -453,7 +453,7 @@
             </tr>
             <tr>
               <td>Chunk closest to the mean, 4 Euler steps</td>
-              <td>37.8%</td>
+              <td>35.8%</td>
             </tr>
           </table>
         </div>
@@ -578,7 +578,7 @@
         </tr>
       </table>
 
-      Jitter-GRPO computes the advantage above with a fixed scale in place of the group std, $A_i = (r_i - \bar{r}_g) / 0.5$ (instead of dividing by group variance like traditional GRPO, see <a href="#advantage_norm">Advantage
+      Jitter-GRPO computes the advantage above with a fixed scale in place of the group std, $A_i = (r_i - \bar{r}_g) / 0.5$ (instead of dividing by group standard deviation like traditional GRPO, see <a href="#advantage_norm">Advantage
       Normalization</a>), and splits it evenly over the rollout's $T_i$ trained chunks, $\hat{A}_{i,t} = A_i / T_i$, so every rollout carries the same
       total weight regardless of length.
       <br>
@@ -723,7 +723,7 @@
       <br><br>
 
       <h5 id="awr_on_success">Optional Reinforcing Successes (AWR-on-Success)</h5>
-      By FM surrogate's likelihood is biased: it can lower a chunk's likelihood freely but can barely raise it. Since
+      The FM surrogate's likelihood is biased: it can lower a chunk's likelihood freely but can barely raise it. Since
       $\ln \pi \approx -\mathrm{MSE}$, the ratio is a difference of MSEs, and $\mathrm{MSE}_\theta$ can only range over $[0, \infty)$:
       $$\ln \rho = \ln \pi_\theta - \ln \pi_{\text{ref}} = \mathrm{MSE}_{\text{ref}} - \mathrm{MSE}_\theta
         \quad\Longrightarrow\quad \ln \rho \in (-\infty,\ \mathrm{MSE}_{\text{ref}}], \qquad \rho \in (0,\ e^{\mathrm{MSE}_{\text{ref}}}]$$
@@ -732,7 +732,7 @@
       is small, so the cap is tight (often $e^{\mathrm{MSE}_{\text{ref}}} \approx 1.002$). This means that a success's ratio can barely rise, while a failure's can fall
       until the clip stops it.
       <br><br>
-      <code>positive_advantage_weight_scaling</code> accomodates for the bias presented in FM surrogate's inability to significantly raise a success's ratio.
+      <code>positive_advantage_weight_scaling</code> accommodates for the bias presented in FM surrogate's inability to significantly raise a success's ratio.
       Only for positive advantage chunks, the Jitter-GRPO codebase allows for more heavily weighting positive advantage chunks by $k$ below:
       $$k = \mathrm{clip}\Big(\kappa\,\frac{M_-}{M_+},\ 1,\ k_{\max}\Big)$$
       where $M_-$ and $M_+$ are the summed losses of the failure and success rows still passing gradient. So $k$ targets a reinforcement mass of
@@ -863,7 +863,7 @@
           <td>0.5, on, 0.75–0.9</td>
           <td>Each minibatch's success share tracks the natural share, clamped to [0.5, max]: rare successes get oversampled, rare failures do not. 
             <br>
-            Given that we don't have an normalized probability distribution (Gaussian/softmax) we are explicitly reweighting,
+            Given that we don't have a normalized probability distribution (Gaussian/softmax) we are explicitly reweighting,
             an isolated negative update just <u>degrades the field locally with no guaranteed attractor</u>. 
             For stable training, we need a good action's path in the same minibatch to absorb the rerouted volume, such that <u>every mini-batch has directional balance without losing data.</u></td>
         </tr>
@@ -876,34 +876,73 @@
       <br><br>
 
       <h5 id="related_work">Related Work</h5>
-      <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em;">
+      Jitter-GRPO starts from FPO's FM surrogate <a href="https://arxiv.org/abs/2507.21053" target="_blank">[McAllister et al., 2025]</a> and adds
+      three wins:
+      <ul>
+        <li><strong>A Jacobian regularizer that falls out of jitter.</strong> <a href="#jitter_jacobian">Jittering a success's input noise</a> adds an
+          endpoint-Jacobian penalty in expectation, which <a href="#motivation">narrows the fan</a> around each successful chunk at no extra compute:
+          no double backward pass, no extra network, and <a href="#fm_surrogate">no sampler change</a>.</li>
+        <li><strong>A stabilized FM surrogate.</strong> The surrogate is lopsided: since $\mathrm{MSE}_\theta \ge 0$, a success's ratio can rise
+          only to $e^{\mathrm{MSE}_{\text{ref}}} \approx 1.002$, a failure's can fall freely, and without a normalized distribution an isolated push on a
+          failure only degrades the field. Jitter-GRPO counters all three: <a href="#awr_on_success">AWR-on-success</a> up-weights successes to make up
+          for their small ratio gain, the <a href="#relative_clip">relative lower clip</a> budgets erosion by each chunk's own fit, and
+          <a href="#implementation_details">dynamic balanced minibatches</a> pair every erosion step with successes to absorb it.</li>
+        <li><strong>Online RL for a 3.3B flow-matching VLA on one GPU.</strong> Whole episodes act as GRPO answers with value-free credit, failure
+          tails are trimmed at the gripper's reopen, and LoRA trains 0.44% of GR00T's weights on a single 24 GB A10G.</li>
+      </ul>
+      Side by side with the closest prior work, only Jitter-GRPO checks every column:
+      <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em; text-align: center;">
         <tr style="background-color: #f2f2f2;">
-          <th>Work</th>
-          <th>Idea</th>
-          <th>Difference from Jitter-GRPO</th>
+          <th style="text-align: left;">Method</th>
+          <th>RL on a flow model</th>
+          <th>Jacobian penalty</th>
+          <th>Rollout sampler unchanged</th>
+          <th>Fixes the surrogate's success/failure imbalance</th>
         </tr>
         <tr>
-          <td>FPO <a href="https://arxiv.org/abs/2507.21053" target="_blank">[McAllister et al., 2025]</a></td>
-          <td>FM-loss likelihood ratio inside PPO</td>
-          <td>Supplies Jitter-GRPO's surrogate; no jitter</td>
+          <td style="text-align: left;"><a href="https://doi.org/10.1162/neco.1995.7.1.108" target="_blank">Bishop, 1995</a>;
+            <a href="https://arxiv.org/abs/1908.02729" target="_blank">Hoffman et al., 2019</a></td>
+          <td><span style="color: #c20f0f;">✗</span> (supervised)</td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td>—</td>
+          <td>—</td>
         </tr>
         <tr>
-          <td><a href="https://arxiv.org/abs/2505.05470" target="_blank">Flow-GRPO</a>,
+          <td style="text-align: left;"><a href="https://arxiv.org/abs/2505.05470" target="_blank">Flow-GRPO</a>,
             <a href="https://arxiv.org/abs/2505.22094" target="_blank">ReinFlow</a>,
-            <a href="https://arxiv.org/abs/2510.25889" target="_blank">π<sub>RL</sub></a> [2025]</td>
-          <td>Inject noise into the sampler for exploration and per-step likelihoods</td>
-          <td>Jitter-GRPO's jitter lives only in the loss; rollouts use GR00T's unmodified sampler</td>
+            <a href="https://arxiv.org/abs/2510.25889" target="_blank">π<sub>RL</sub></a></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #c20f0f;">✗</span></td>
+          <td><span style="color: #c20f0f;">✗</span> (injects noise to explore)</td>
+          <td>— (no FM surrogate)</td>
         </tr>
         <tr>
-          <td>ReFPO <a href="https://arxiv.org/abs/2606.21086" target="_blank">[Wang et al., 2026]</a></td>
-          <td>Adds a reflow (CFM) loss to FPO to regularize the flow's geometry</td>
-          <td>Applies to every sample and perturbs no noise; Jacobians are only measured</td>
+          <td style="text-align: left;"><a href="https://arxiv.org/abs/2507.21053" target="_blank">FPO</a></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #c20f0f;">✗</span></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #c20f0f;">✗</span></td>
         </tr>
         <tr>
-          <td><a href="https://doi.org/10.1162/neco.1995.7.1.108" target="_blank">[Bishop, 1995]</a>,
-            <a href="https://arxiv.org/abs/1908.02729" target="_blank">[Hoffman et al., 2019]</a></td>
-          <td>Training on noisy inputs ≈ a Jacobian (Tikhonov) penalty</td>
-          <td>Supervised setting; Jitter-GRPO applies it to a flow policy's noise, on successes only</td>
+          <td style="text-align: left;"><a href="https://arxiv.org/abs/2602.02481" target="_blank">FPO++</a></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #c20f0f;">✗</span></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td>Failure side only</td>
+        </tr>
+        <tr>
+          <td style="text-align: left;"><a href="https://arxiv.org/abs/2606.21086" target="_blank">ReFPO</a></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td>Measured only</td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #c20f0f;">✗</span></td>
+        </tr>
+        <tr style="font-weight: bold;">
+          <td style="text-align: left;">Jitter-GRPO</td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #198754;">✓</span></td>
+          <td><span style="color: #198754;">✓</span></td>
         </tr>
       </table>
       I found no prior work that jitters a flow policy's input noise inside the RL objective to widen the basins of successful actions.
