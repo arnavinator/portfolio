@@ -55,7 +55,7 @@
         <u>Jitter-GRPO: New Research in Fine-Tuning Flow Matching VLAs</u>
       </h1>
       <h3 class="oswald-heading"><span style="color: rgb(242, 242, 242);">
-        Jitter noise to GRPO FM surrogate for PEFT on NVIDIA's Isaac GR00T VLA
+        Jitter noise to GRPO Flow Matching surrogate for PEFT on NVIDIA's Isaac GR00T VLA
       </span></h3>
 
       <h6><span style="color: rgb(242, 242, 242);">
@@ -118,8 +118,26 @@
       <h2 class="mb-3">Table of Contents</h2>
       <ul>
         <li><a href="#vla_peft_overview">VLA / PEFT Overview</a></li>
+        <ul>
+          <li><a href="#gr00t_panda_omron">GR00T N1.6 on PandaOmron</a></li>
+          <li><a href="#lora_targets">LoRA Targets</a></li>
+        </ul>
         <li><a href="#motivation">Motivation: Investigating GR00T's Denoising</a></li>
+        <ul>
+          <li><a href="#mean_action">Is the mean a good action?</a></li>
+          <li><a href="#diagnosis_to_jitter_grpo">From Diagnosis to Jitter-GRPO</a></li>
+        </ul>
         <li><a href="#theory">Jitter-GRPO Theory</a></li>
+        <ul>
+          <li><a href="#fm_surrogate">Flow Matching (FM) Surrogate Log-Probability</a></li>
+          <li><a href="#grpo_robot">Applying the FM Surrogate to GRPO on Robot Trajectories</a></li>
+          <li><a href="#jitter_jacobian">Jitter as a Jacobian Regularizer</a></li>
+          <li><a href="#awr_on_success">Optional Reinforcing Successes (AWR-on-Success)</a></li>
+          <li><a href="#relative_clip">Relative Lower Clip</a></li>
+          <li><a href="#advantage_norm">Advantage Normalization</a></li>
+          <li><a href="#implementation_details">Additional Implementation Details</a></li>
+          <li><a href="#related_work">Related Work</a></li>
+        </ul>
         <li><a href="#proof_of_concept">Proof of Concept Example (overfit on single scene)</a></li>
         <li><a href="#full_training">Full Training Example</a></li>
         <li><a href="#future_directions">Future Directions</a></li>
@@ -133,7 +151,7 @@
       <hr>
       <h2>VLA / PEFT Overview</h2>
 
-      <h5>GR00T N1.6 on PandaOmron</h5>
+      <h5 id="gr00t_panda_omron">GR00T N1.6 on PandaOmron</h5>
       <a href="https://github.com/NVIDIA/Isaac-GR00T" target="_blank">GR00T N1.6</a> is NVIDIA's open 3.3B-parameter vision-language-action (VLA) model.
       Each query maps three camera images, the robot state, and a language instruction to a 16-step chunk of actions:
 
@@ -218,7 +236,7 @@
       on the counter in the upright position.
       <br><br>
 
-      <h5>LoRA Targets</h5>
+      <h5 id="lora_targets">LoRA Targets</h5>
       Parameter-efficient fine-tuning (PEFT) adapts a large pretrained model by training a small set of extra parameters while the original
       weights stay frozen. LoRA <a href="https://arxiv.org/abs/2106.09685" target="_blank">[Hu et al., 2021]</a> is a PEFT method: it keeps each
       targeted weight $W$ frozen and learns a low-rank update, $W + \tfrac{\alpha}{r} BA$ with $B \in \mathbb{R}^{d \times r}$,
@@ -408,7 +426,7 @@
         </li>
       </ul>
       <br>
-      <h5>Is the mean a good action?</h5>
+      <h5 id="mean_action">Is the mean a good action?</h5>
       More granular denoising (more steps) leads to more spread in trajectories, but VLA still offers the mean trajectory as a valid 
       trajectory (given the right noise draw). 
       <br>
@@ -449,7 +467,7 @@
           around a good action.</li>
       </ul>
 
-      <h5>From Diagnosis to Jitter-GRPO</h5>
+      <h5 id="diagnosis_to_jitter_grpo">From Diagnosis to Jitter-GRPO</h5>
       That set the mission: reshape the fan by LoRA fine-tuning the DiT with online RL.
       <ul>
         <li><strong>GRPO</strong> gives stable, PPO-style clipped updates. Advantages come from comparing rollouts within a group, so no value
@@ -464,8 +482,432 @@
     <section id="theory">
       <hr>
       <h2>Jitter-GRPO Theory</h2>
-      FIXME
-      <br> <br>
+
+      Throughout, $\varepsilon$ is the exact noise the server drew for a chunk during the rollout, and $a$ is the raw output the 4-step sampler
+      produced from that same $\varepsilon$. Jitter-GRPO fine-tunes the DiT with GRPO so that, when $a$ succeeded, slightly perturbed noise
+      $\varepsilon'$ also leads to $a$.
+      <br><br>
+
+      <h5 id="fm_surrogate">Flow Matching (FM) Surrogate Log-Probability</h5>
+      GRPO's clipped objective needs the likelihood ratio $\rho = \pi_\theta(a \mid o) / \pi_{\text{ref}}(a \mid o)$, where $\pi_{\text{ref}}$ is the
+      policy that collected the rollouts. An LLM reads this off its softmax, but GR00T's sampler is a deterministic ODE from $\varepsilon$ to $a$ with
+      no tractable density. Following FPO <a href="https://arxiv.org/abs/2507.21053" target="_blank">[McAllister et al., 2025]</a>, Jitter-GRPO uses
+      the flow-matching (FM) loss as a log-probability surrogate, evaluated along the chunk's own path at $K = 6$ flow times $\tau_k$:
+      $$\log \pi_\theta(a \mid o) \approx -\mathrm{MSE}_\theta = -\frac{1}{K} \sum_{k=1}^{K} \big\| v_\theta(x_{\tau_k} \mid \tau_k, o) - (a - \varepsilon) \big\|^2,
+        \qquad x_\tau = (1 - \tau)\,\varepsilon + \tau a$$
+      where $\|\cdot\|^2$ averages over the $D$ valid action elements.
+      <ul>
+        <li><strong>Intuition:</strong> $v_\theta$ is trained to carry noise to actions along straight ($\tau$-length) paths. If it predicts this chunk's velocity
+          $a - \varepsilon$ well, $a$ fits what the model learned, so $a$ is likely in a high-density region of the model's implied distribution, captured by a low MSE. 
+        </li>
+        <li><strong>Why MSE?:</strong> A squared error is a negative Gaussian log-likelihood, which is why $-\mathrm{MSE}$ stands in for $\log \pi$: 
+          $$p(x) \propto \exp\!\left(-\frac{\|x - \mu\|^2}{2\sigma^2}\right) \implies \ln p(x) = -\frac{\|x - \mu\|^2}{2\sigma^2} + \text{const}$$
+        </li>
+      </ul>
+      With the surrogate, the ratio is a difference of MSEs, $\ln \rho_i \approx \mathrm{MSE}_{\text{ref},i} - \mathrm{MSE}_{\theta,i}$. The surrogate's
+      unknown constant cancels, so $\rho$ measures only how the update changed $v_\theta$. Note that while $\mathrm{MSE}_{\text{ref},i}$ and $\mathrm{MSE}_{\theta,i}$ are not
+      exact measures of log likelihoods themselves, since these constants cancel when subtracted, their subtraction is a good proxy for the ratio. 
+      <br><br>
+      Note that this FM surrogate fits LoRA on GR00T better than the alternatives:
+      <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em;">
+        <tr style="background-color: #f2f2f2;">
+          <th>Alternative</th>
+          <th>Problem on GR00T</th>
+        </tr>
+        <tr>
+          <td>Exact likelihood (change of variables)</td>
+          <td><strong>~25,600 DiT backward passes per chunk</strong>, to measure how the sampler stretches each of the 6400 noise values (50 × 128) at each
+            of the 4 steps</td>
+        </tr>
+        <tr>
+          <td>Hutchinson trace estimate</td>
+          <td><strong>~12 DiT forward passes per chunk.</strong> Almost every chunk must first be run in reverse through the new sampler to recover its noise,
+            and the estimate is noisy</td>
+        </tr>
+        <tr>
+          <td>Denoising steps as an MDP (<a href="https://arxiv.org/abs/2305.13301" target="_blank">DDPO</a>,
+            <a href="https://arxiv.org/abs/2409.00588" target="_blank">DPPO</a>)</td>
+          <td><strong>No gradient.</strong> GR00T's denoising steps are deterministic, so each step's likelihood is all-or-nothing</td>
+        </tr>
+        <tr>
+          <td>Noise injected into the sampler (<a href="https://arxiv.org/abs/2505.05470" target="_blank">Flow-GRPO</a>,
+            <a href="https://arxiv.org/abs/2505.22094" target="_blank">ReinFlow</a>,
+            <a href="https://arxiv.org/abs/2510.25889" target="_blank">π<sub>RL</sub></a>)</td>
+          <td><strong>Changes the deployed sampler.</strong> Every denoising step gets extra random noise, which alters the executed actions and adds a
+            noise level to tune (or a network to learn it)</td>
+        </tr>
+        <tr>
+          <td><strong>FM surrogate (used here)</strong></td>
+          <td><strong>No problem.</strong> 6 DiT forward passes per chunk (one per $\tau_k$), under any weights; the sampler is unchanged</td>
+        </tr>
+      </table>
+      <br><br>
+
+      <h5 id="grpo_robot">Applying the FM Surrogate to GRPO on Robot Trajectories</h5>
+      GRPO <a href="https://arxiv.org/abs/2402.03300" target="_blank">[Shao et al., 2024]</a> replaces PPO's value network with a group baseline: it
+      samples several answers to one question and scores each answer against its group. This assumes <em>terminal</em> rewards: an answer is graded
+      once, and every token shares the grade. Robot rewards are not terminal, since each state sets up the rewards that follow, which is why PPO learns
+      a value function $V(s_t)$ to score every step. 
+      <br>
+      Jitter-GRPO stays value-free by making a whole trajectory the "answer" and distributing rewards/advantage equally throughout a trajectory:
+      <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em;">
+        <tr style="background-color: #f2f2f2;">
+          <th></th>
+          <th>GRPO for LLMs</th>
+          <th>Jitter-GRPO</th>
+        </tr>
+        <tr>
+          <td><strong>Question</strong></td>
+          <td>A prompt</td>
+          <td>One initial state (a RoboCasa kitchen)</td>
+        </tr>
+        <tr>
+          <td><strong>Answer</strong></td>
+          <td>A response, sampled $G$ times from the same question</td>
+          <td>A full episode rollout (many action chunks), sampled $G$ times from the same initial state</td>
+        </tr>
+        <tr>
+          <td><strong>Reward</strong></td>
+          <td>Terminal score of the response</td>
+          <td>Sparse (terminal) binary success at the end of the episode, $r \in \{0, 1\}$</td>
+        </tr>
+        <tr>
+          <td><strong>Credit</strong></td>
+          <td>The response's advantage, broadcast to every token in the response</td>
+          <td>The episode's advantage, broadcast to every action chunk in the rollout</td>
+        </tr>
+      </table>
+
+      Jitter-GRPO computes the advantage above with a fixed scale in place of the group std, $A_i = (r_i - \bar{r}_g) / 0.5$ (instead of dividing by group variance like traditional GRPO, see <a href="#advantage_norm">Advantage
+      Normalization</a>), and splits it evenly over the rollout's $T_i$ trained chunks, $\hat{A}_{i,t} = A_i / T_i$, so every rollout carries the same
+      total weight regardless of length.
+      <br>
+      The loss is the clipped objective with a per-row lower clip:
+      $$\mathcal{L}(\theta) = \mathbb{E}_{i,t}\Big[-\min\big(\rho\,\hat{A},\ \mathrm{clip}(\rho,\ \rho_{\text{floor}},\ 1 + \epsilon_{\text{high}})\,\hat{A}\big)\Big],
+        \qquad \rho = e^{\,\mathrm{MSE}_{\text{ref}} - \mathrm{MSE}_\theta}$$
+      with $\epsilon_{\text{high}} = 0.2$ and $\rho_{\text{floor}}$ set per row (see <a href="#relative_clip">Relative Lower Clip</a>).
+      <br><br>
+      Only the LoRA weights in $v_\theta$ receive gradients. For an unclipped row, the loss $\ell = -\hat{A}\rho$ has gradient
+      $\nabla_\theta \ell = \hat{A}\,\rho\,\nabla_\theta \mathrm{MSE}_\theta$:
+      <ul>
+        <li><strong>Successes</strong> ($\hat{A} \gt 0$) descend their FM loss, pulling $v_\theta$ toward their chunk: <em>reinforcement</em>.</li>
+        <li><strong>Failures</strong> ($\hat{A} \lt 0$) ascend it, pushing $v_\theta$ away from their chunk: <em>erosion</em>. Once
+          $\rho \lt \rho_{\text{floor}}$, the clip zeroes the row's gradient.</li>
+      </ul>
+      <br><br>
+
+      <h5 id="jitter_jacobian">Jitter as a Jacobian Regularizer</h5>
+      Success rows are trained from jittered noise, with the velocity target moved to match. At each $\tau_k$, for each $\varepsilon$, we find a variance-preserved 
+      neighboring noise whose proximity is controlled by $\lambda$:
+      $$\varepsilon' = \sqrt{1 - \lambda^2}\,\varepsilon + \lambda\,\xi, \qquad \xi \sim \mathcal{N}(0, I)$$
+      The jitter is variance-preserving, so $\varepsilon'$ is still a standard normal draw. 
+      <br><br>
+      <strong>What a jittered row asks.</strong> From an input $x$ at flow time $\tau$, one Euler step over the remaining time $1 - \tau$ jumps
+      straight to the DiT's predicted clean chunk (on the chunk's own path, an exact field $v_\theta = a - \varepsilon$ lands exactly on $a$):
+      $$\hat{a}_\theta(x) = x + (1 - \tau)\, v_\theta(x \mid \tau, o)$$
+      Evaluate it at the jittered input $x'_\tau = (1 - \tau)\,\varepsilon' + \tau a$, which is $x_\tau$ built from $\varepsilon'$. Substituting
+      $x'_\tau$ and using $\tau a - a = -(1 - \tau)\,a$:
+      $$\begin{aligned}
+        \hat{a}_\theta(x'_\tau) - a &amp;= (1 - \tau)\,\varepsilon' + \tau a + (1 - \tau)\, v_\theta(x'_\tau \mid \tau, o) - a \\
+        &amp;= (1 - \tau)\big[v_\theta(x'_\tau \mid \tau, o) - (a - \varepsilon')\big]
+      \end{aligned}$$
+      The bracket is the jittered row's FM residual against the moved target $a - \varepsilon'$, so its loss is
+      $$\mathrm{MSE}_\theta(\varepsilon') = \big\| v_\theta(x'_\tau \mid \tau, o) - (a - \varepsilon') \big\|^2 = \frac{\|\hat{a}_\theta(x'_\tau) - a\|^2}{(1 - \tau)^2}$$
+      Minimizing it makes the one-step prediction from the jittered input land on $a$: <em>from noise near $\varepsilon$, land on $a$</em>.
+      <br><br>
+      <strong>The Jacobian.</strong> The Jacobian of a map is the matrix of all its partial derivatives, with one row per output value and one
+      column per input value, so a map from $n$ inputs to $m$ outputs has an $m \times n$ Jacobian. For the sampler that turns noise into an action,
+      $J = \partial a / \partial \varepsilon$ is square, $6400 \times 6400$ (GR00T's raw $50 \times 128$ action tensor in and out, of which
+      $16 \times 12$ values are real PandaOmron actions). Entry $(i, j)$ says how much action value $i$ moves when noise value $j$ is nudged, so $J$ is
+      the sampler's local stretching factor. Its determinant, which exists only for square matrices, measures how the sampler stretches volume and sets
+      the exact density by the change of variables:
+      $$p(a) = \frac{p(\varepsilon)}{|\det J|} \quad\Longrightarrow\quad \log p(a) = \log p(\varepsilon) - \log|\det J|$$
+      $p(\varepsilon)$ is a known Gaussian, but $\log|\det J|$ costs the ~25,600 backward passes ruled out in the table above.
+      <br><br>
+      Jitter-GRPO instead penalizes a cheaper summary of a Jacobian $J$, its <strong>squared Frobenius norm</strong> $\|J\|_F^2$. It equals the trace of $J^\top J$, since the $j$-th diagonal entry of $J^\top J$ is column
+      $j$ dotted with itself:
+      $$\|J\|_F^2 = \sum_{i,j} J_{ij}^2 = \sum_j (J^\top J)_{jj} = \mathrm{tr}(J^\top J)$$
+      This holds for a Jacobian of any shape: for an $m \times n$ matrix $J$, $J^\top J$ is square ($n \times n$), so its trace is always defined
+      even when $J$ itself is not square.
+      It is the total squared stretch, or how far the output moves on average when every input value is nudged by independent unit noise. A small
+      norm means nearby noise lands nearby (a wide basin); a large one means nearby noise scatters (a wide fan).
+      <br><br>
+      <strong>How jitter penalizes the Jacobian squared Frobenius norm.</strong> Four steps:
+      <ol>
+        <li><strong>Input shift.</strong> The jitter moves the input by
+          $x'_\tau - x_\tau = (1 - \tau)(\varepsilon' - \varepsilon) \approx (1 - \tau)\,\lambda\,\xi$, since $\sqrt{1 - \lambda^2} \approx 1$.</li>
+        <li><strong>Output shift.</strong> Differentiating $\hat{a}_\theta(x) = x + (1 - \tau)\,v_\theta(x \mid \tau, o)$ gives the one-step
+          prediction's Jacobian, which depends on where it is evaluated:
+          $$J(x) = \frac{\partial \hat{a}_\theta(x)}{\partial x} = I + (1 - \tau)\,\frac{\partial v_\theta(x)}{\partial x}$$
+          Doing a first-order Taylor expansion around $x_\tau$:
+          $$\hat{a}_\theta(x'_\tau) \approx \hat{a}_\theta(x_\tau) + J(x_\tau)\,(x'_\tau - x_\tau) = \hat{a}_\theta(x_\tau) + (1 - \tau)\,\lambda\,J(x_\tau)\,\xi$$
+          Subtracting $a$ from both sides splits the landing error into the clean-noise error plus a jitter term:
+          $$\hat{a}_\theta(x'_\tau) - a \approx \big[\hat{a}_\theta(x_\tau) - a\big] + (1 - \tau)\,\lambda\,J(x_\tau)\,\xi$$</li>
+        <li><strong>Average over $\xi$.</strong> We now take the expected value over the $\xi$ of the squared landing error:
+          $\mathbb{E}_\xi\big[\|\hat{a}_\theta(x'_\tau) - a\|^2\big]$. 
+          <br>
+          First square both sides of step 2, writing $\|u\|^2 = u^\top u / D$ (mean of squared components of $u$):
+          $$\begin{aligned}
+            \big\|\hat{a}_\theta(x'_\tau) - a\big\|^2 &amp;\approx \big\|\hat{a}_\theta(x_\tau) - a\big\|^2 \\
+            &amp;\quad + \frac{2(1 - \tau)\lambda}{D}\,\big(\hat{a}_\theta(x_\tau) - a\big)^\top J(x_\tau)\,\xi \\
+            &amp;\quad + (1 - \tau)^2 \lambda^2\, \big\|J(x_\tau)\,\xi\big\|^2
+          \end{aligned}$$
+          Then take $\mathbb{E}_\xi[\cdot]$ of each term:
+          <ul>
+            <li><em>First term.</em> It is evaluated at the clean input $x_\tau$ and contains no $\xi$, so averaging leaves it unchanged:
+              $$\mathbb{E}_\xi\big[\|\hat{a}_\theta(x_\tau) - a\|^2\big] = \|\hat{a}_\theta(x_\tau) - a\|^2$$</li>
+            <li><em>Cross term.</em> Everything in it except $\xi$ is evaluated at the clean input $x_\tau$, which does not depend on $\xi$. That part
+              is a fixed vector, so it comes out of the average, leaving only the mean of the jitter:
+              $$\mathbb{E}_\xi\Big[\big(\hat{a}_\theta(x_\tau) - a\big)^\top J(x_\tau)\,\xi\Big]
+                = \underbrace{\big(\hat{a}_\theta(x_\tau) - a\big)^\top J(x_\tau)}_{\text{fixed vector, no } \xi}\ \underbrace{\mathbb{E}_\xi[\xi]}_{=\,0} = 0$$
+              Intuitively, $\xi$ and $-\xi$ are equally likely and flip the cross term's sign, so they cancel on average.</li>
+            <li><em>Last term.</em> By the trace identity $\mathbb{E}[\xi^\top A\, \xi] = \mathrm{tr}(A\, \mathbb{E}[\xi\xi^\top])$ with
+              $\mathbb{E}[\xi\xi^\top] = I$, and $\mathrm{tr}(J^\top J) = \|J\|_F^2$ from above, it averages to the squared Frobenius norm:
+              $$\mathbb{E}_\xi\big[\|J(x_\tau)\,\xi\|^2\big] = \frac{1}{D}\,\mathbb{E}_\xi\big[\xi^\top J(x_\tau)^\top J(x_\tau)\,\xi\big]
+                = \frac{1}{D}\,\mathrm{tr}\big(J(x_\tau)^\top J(x_\tau)\big) = \frac{\|J(x_\tau)\|_F^2}{D}$$</li>
+          </ul>
+          So
+          $$\mathbb{E}_\xi\big[\|\hat{a}_\theta(x'_\tau) - a\|^2\big] \approx \big\|\hat{a}_\theta(x_\tau) - a\big\|^2 + (1 - \tau)^2 \lambda^2\, \frac{\|J(x_\tau)\|_F^2}{D}$$
+          Here $D$ is the number of action values the MSE averages over: the $16 \times 12 = 192$ real PandaOmron values ($8 \times 12 = 96$ when only
+          the executed steps are scored, as in the runs), and $\|J(x_\tau)\|_F^2$ sums over their rows (a $D \times 6400$ block of $J(x_\tau)$).</li>
+        <li><strong>Back to the loss.</strong> Dividing by $(1 - \tau)^2$ turns the landing error back into the FM loss, and the first term is
+          $\mathrm{MSE}_\theta(\varepsilon)$ by the same identity at $\lambda = 0$. For a well-fit chunk:</li>
+      </ol>
+      $$\mathbb{E}_\xi\big[\mathrm{MSE}_\theta(\varepsilon')\big] \approx \underbrace{\mathrm{MSE}_\theta(\varepsilon)}_{\text{fit } a \text{ from } \varepsilon}
+        + \frac{\lambda^2}{D}\,\underbrace{\|J(x_\tau)\|_F^2}_{\text{endpoint sensitivity}}$$
+      <ul>
+        <li><strong>A Jacobian penalty for free:</strong> a success row now also penalizes how far the predicted landing point moves when the noise moves.
+          Sampling $\xi$ estimates the Frobenius norm, as in Hutchinson's trace estimator, so no double backward pass is needed.</li>
+        <li><strong>Where it acts:</strong> since $J(x_\tau) = I + (1 - \tau)\,\partial v_\theta / \partial x$, the penalty is zero when
+          $\partial v_\theta / \partial x = -I / (1 - \tau)$, i.e. when the field fully cancels input noise. Base GR00T is already close to this in most
+          directions, so the penalty concentrates on the few noise directions that still move the landing point: the directions that form the fan.
+          Shrinking them widens the basin around each success.</li>
+        <li><strong>Fresh $\xi$:</strong> it is redrawn on every forward pass (each epoch, minibatch, and $\tau_k$), so there is no fixed perturbation
+          to memorize.</li>
+      </ul>
+      Configuration:
+      <ul>
+        <li><code>jitter_pos</code> $= \lambda$ on success rows: 0.125 to 0.4 in the experiments conducted. That jitters the noise by $\lambda^2$ = 1.6% to
+          16% (the share of $\varepsilon'$'s variance that is fresh noise $\xi$), leaving $\varepsilon'$ correlated with $\varepsilon$ by
+          $\sqrt{1 - \lambda^2}$ = 99% to 92%.</li>
+        <li><code>jitter_neg</code> $= 0$ on failure rows. A failure row <em>raises</em> its FM loss, so jittering it would also raise the endpoint
+          Jacobian around the failure. That objective has no upper bound (unbounded erosion), and raising it undoes the field's noise cancellation,
+          so noise would leak into the actions. Without jitter, failures are pushed away only at their exact $\varepsilon$.</li>
+      </ul>
+
+      <figure style="margin: 20px 0; text-align: center;">
+        <pre class="diagram">
+ fixed before the update:  o, ε, a, Â, MSE_ref<span class="note">   (no gradient)</span>
+   │
+   ▼
+ ε' = sqrt(1-λ²)·ε + λ·ξ       <span class="note">ξ ~ N(0, I), redrawn every forward pass</span>
+   │                           <span class="note">λ = jitter_pos on successes, 0 on failures</span>
+   ▼
+ x' = (1-τ)·ε' + τ·a           <span class="note">τ = one of the K = 6 values τ_k</span>
+   │
+   ▼
+<span class="lora"> v_θ(x' | τ, o)   DiT + LoRA  ◄─────────────────────┐</span>
+   │                                                <span class="lora">│</span>
+   ▼                                                <span class="lora">│</span>
+ MSE_θ = |v_θ - (a - ε')|²                          <span class="lora">│</span><span class="note"> backprop:</span>
+   │                                                <span class="lora">│</span><span class="note"> only the LoRA</span>
+   ▼                                                <span class="lora">│</span><span class="note"> weights train</span>
+ ρ = exp(MSE_ref - MSE_θ)                           <span class="lora">│</span>
+   │                                                <span class="lora">│</span>
+   ▼                                                <span class="lora">│</span>
+ loss = -min(ρ·Â, clip(ρ, ρ_floor, 1.2)·Â)  <span class="lora">────────┘</span></pre>
+        <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+          <em>Fig. 11: One Jitter-GRPO training row (green: the gradient path into the LoRA weights)</em>
+        </figcaption>
+      </figure>
+      <br><br>
+
+      <h5 id="awr_on_success">Optional Reinforcing Successes (AWR-on-Success)</h5>
+      By FM surrogate's likelihood is biased: it can lower a chunk's likelihood freely but can barely raise it. Since
+      $\ln \pi \approx -\mathrm{MSE}$, the ratio is a difference of MSEs, and $\mathrm{MSE}_\theta$ can only range over $[0, \infty)$:
+      $$\ln \rho = \ln \pi_\theta - \ln \pi_{\text{ref}} = \mathrm{MSE}_{\text{ref}} - \mathrm{MSE}_\theta
+        \quad\Longrightarrow\quad \ln \rho \in (-\infty,\ \mathrm{MSE}_{\text{ref}}], \qquad \rho \in (0,\ e^{\mathrm{MSE}_{\text{ref}}}]$$
+      $\mathrm{MSE}_{\text{ref}}$ is the error of the very policy that generated the chunk. For chunks it already handles well (the ones which lead to successful
+      trajectories and we would like to assign high advantage to), $\mathrm{MSE}_{\text{ref}}$
+      is small, so the cap is tight (often $e^{\mathrm{MSE}_{\text{ref}}} \approx 1.002$). This means that a success's ratio can barely rise, while a failure's can fall
+      until the clip stops it.
+      <br><br>
+      <code>positive_advantage_weight_scaling</code> accomodates for the bias presented in FM surrogate's inability to significantly raise a success's ratio.
+      Only for positive advantage chunks, the Jitter-GRPO codebase allows for more heavily weighting positive advantage chunks by $k$ below:
+      $$k = \mathrm{clip}\Big(\kappa\,\frac{M_-}{M_+},\ 1,\ k_{\max}\Big)$$
+      where $M_-$ and $M_+$ are the summed losses of the failure and success rows still passing gradient. So $k$ targets a reinforcement mass of
+      $\kappa$ (<code>positive_advantage_weight_target_ratio</code>) times the erosion mass, capped at $k_{\max}$
+      (<code>positive_advantage_weight_max</code>). 
+      <br>
+      Since jitter rides on success rows, $k$ scales the Jacobian penalty too. 
+      <br>
+      This feature is off in the proof of concept, and included (and A/B tested) in full training ($\kappa = 1.5$, $k_{\max} = 5$).
+      <br><br><br>
+
+      <h5 id="relative_clip">Relative Lower Clip</h5>
+      The same difference of MSEs, $\ln \rho_i = \mathrm{MSE}_{\text{ref},i} - \mathrm{MSE}_{\theta,i}$, shapes the clip.
+      <br><br>
+      <strong>Having a uniform lower clip is uneven.</strong> On the erosion side, a flat clip stops a failure row's gradient once its ratio drops
+      below $1 - \epsilon_{\text{low}}$. At $\epsilon_{\text{low}} = 0.08$:
+      $$\rho_i \lt 0.92 \iff \mathrm{MSE}_{\text{ref},i} - \mathrm{MSE}_{\theta,i} \lt \ln(0.92) = -0.08338 \iff
+        \mathrm{MSE}_{\theta,i} \gt \mathrm{MSE}_{\text{ref},i} + 0.08338$$
+      Every row gets the same <em>absolute</em> allowance. Relative to how well the row was already fit, that allowance is
+      $$\frac{\mathrm{MSE}_{\text{ref},i} + 0.08338}{\mathrm{MSE}_{\text{ref},i}}$$
+      which depends heavily on $\mathrm{MSE}_{\text{ref},i}$, and $\mathrm{MSE}_{\text{ref},i}$ varies widely: in iteration 1 alone it spans 0.00032 to
+      0.0783, a 245× spread within one buffer.
+      <ul>
+        <li><strong>10th percentile</strong> of $\mathrm{MSE}_{\text{ref}}$ (a chunk the reference policy fits better than 90% of the buffer):
+          $(0.00032 + 0.08338) / 0.00032 \approx 261.6\times$</li>
+        <li><strong>Maximum</strong> (the single chunk it fits worst): $(0.0783 + 0.08338) / 0.0783 \approx 2.06\times$</li>
+      </ul>
+      So a well-fit chunk gets ~127× more room to erode before the clip stops its gradient than a poorly-fit one. A uniform <em>relative</em> budget
+      fixes this: <code>clip_low_mse_coef</code> $= c$ gives each row its own floor, with $\epsilon_{\text{low}}$ kept as an absolute ceiling:
+      $$\rho_{\text{floor},i} = \exp\!\big(-\min(c \cdot \mathrm{MSE}_{\text{ref},i},\ |\ln(1 - \epsilon_{\text{low}})|)\big)$$
+      A failure's MSE may then grow by at most a factor of $1 + c$. The experiments use $c = 1$ (at most double) and $\epsilon_{\text{low}} = 0.005$:
+      <div class="row gx-4 mt-3 justify-content-center">
+        <div class="col-lg-9">
+          <table class="table table-bordered table-sm" style="font-size: 0.9em;">
+            <tr style="background-color: #f2f2f2;">
+              <th>Chunk in iteration 1's buffer</th>
+              <th>$\mathrm{MSE}_{\text{ref}}$</th>
+              <th>Allowed $\mathrm{MSE}_\theta / \mathrm{MSE}_{\text{ref}}$, flat clip ($\epsilon_{\text{low}} = 0.08$)</th>
+              <th>Allowed $\mathrm{MSE}_\theta / \mathrm{MSE}_{\text{ref}}$, relative clip ($c = 1$)</th>
+            </tr>
+            <tr>
+              <td>10th percentile (fit best)</td>
+              <td>0.00032</td>
+              <td>262×</td>
+              <td>2×</td>
+            </tr>
+            <tr>
+              <td>Maximum (fit worst)</td>
+              <td>0.0783</td>
+              <td>2.06×</td>
+              <td>1.06× (ceiling binds)</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <br><br>
+
+      <h5 id="advantage_norm">Advantage Normalization</h5>
+      <ul>
+        <li><code>group_advantage_fixed_std</code>: divide by a fixed 0.5 (the largest std of a 0/1 reward) instead of the group's own std. The group
+          std inflates nearly-solved and nearly-failed groups: a lone failure in an 11/12 group would get −3.18, against −0.96 in a 6/12 group
+          (−1.83 vs. −1.00 with the fixed scale). Dr. GRPO <a href="https://arxiv.org/abs/2503.20783" target="_blank">[Liu et al., 2025]</a> drops the
+          std term for the same difficulty bias.</li>
+        <li><code>per_iteration_advantage_norm</code>: z-score chunk advantages once per iteration, not per minibatch. Each group's advantages sum to
+          zero, so the iteration mean is ≈ 0 and every sign survives; a per-minibatch mean, skewed by the balanced sampler, can flip a success negative.</li>
+        <li><code>include_anchor_groups</code>, <code>anchor_advantage</code> = 0.3: an all-success group has zero advantage and would be dropped by GRPO.
+          Anchoring gives its chunks a small constant positive advantage (without jitter), so the update keeps reinforcing scenes it already solves.
+          All-fail groups stay dropped, since pushing down every rollout gives no direction to move toward.</li>
+      </ul>
+      <br><br>
+
+      <h5 id="implementation_details">Additional Implementation Details</h5>
+      <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em;">
+        <tr style="background-color: #f2f2f2;">
+          <th></th>
+          <th>Flag</th>
+          <th>Setting</th>
+          <th>Purpose</th>
+        </tr>
+        <tr>
+          <td rowspan="3" style="vertical-align: top;"><strong>Group construction</strong></td>
+          <td><code>group_size</code></td>
+          <td>12</td>
+          <td>Episodes per group. All episodes in a group are bit-identical copies of one initial state.</td>
+        </tr>
+        <tr>
+          <td><code>num_groups</code></td>
+          <td>4</td>
+          <td>Groups per iteration for on-policy data collection.</td>
+        </tr>
+        <tr>
+          <td><code>scene_seed_pool_size</code>, <code>scene_seed_pool_base</code></td>
+          <td>4, 100067</td>
+          <td>Number of kitchen seeds to rotate through (only num_groups are chosen per iteration). Starting seed is user-provided, the remaining seeds in the pool are incremented from the base.</td>
+        </tr>
+        <tr>
+          <td rowspan="3" style="vertical-align: top;"><strong>Rollout</strong></td>
+          <td><code>max_episode_steps</code></td>
+          <td>480</td>
+          <td>Step budget per episode (up to 60 chunks for 8 steps/chunk) until episode forcefully terminates (failure).</td>
+        </tr>
+        <tr>
+          <td><code>n_action_steps</code></td>
+          <td>8</td>
+          <td>Execute 8 of the 16 predicted steps, then re-plan.</td>
+        </tr>
+        <tr>
+          <td><code>post_reopen_keep_chunks</code></td>
+          <td>1–2</td>
+          <td>For episodes declared a failure, keep only 1–2 chunks after gripper reopen (if detected). The arm meanders after a failed grasp; this post-processing allows for higher signal-to-noise ratio when training.</td>
+        </tr>
+        <tr>
+          <td rowspan="4" style="vertical-align: top;"><strong>Minibatch construction</strong></td>
+          <td><code>mask_loss_with_n_action_steps</code></td>
+          <td>on</td>
+          <td>The surrogate scores only the 8 executed steps (instead of scoring all 16 steps in a chunk).</td>
+        </tr>
+        <tr>
+          <td><code>tau_centers</code></td>
+          <td>0, 0.25, 0.35, 0.5, 0.6, 0.75</td>
+          <td>Flow times $\tau_k$ for the surrogate, each with a small random offset (std 0.02). Pre-training favored early $\tau$ (only 35% of
+            its draws reach $\tau \ge 0.5$); these cover all four inference steps and put half the evaluations at $\tau \ge 0.5$, since I showed earlier how later Euler
+            steps add the fan's spread (Figs. 7–9).</td>
+        </tr>
+        <tr>
+          <td><code>balanced_minibatch_positive_adv_ratio</code>, <code>_dynamic</code>, <code>_max</code></td>
+          <td>0.5, on, 0.75–0.9</td>
+          <td>Each minibatch's success share tracks the natural share, clamped to [0.5, max]: rare successes get oversampled, rare failures do not. 
+            <br>
+            Given that we don't have an normalized probability distribution (Gaussian/softmax) we are explicitly reweighting,
+            an isolated negative update just <u>degrades the field locally with no guaranteed attractor</u>. 
+            For stable training, we need a good action's path in the same minibatch to absorb the rerouted volume, such that <u>every mini-batch has directional balance without losing data.</u></td>
+        </tr>
+        <tr>
+          <td><code>mini_batch_size</code> × <code>gradient_accumulation_steps</code></td>
+          <td>8 × 16</td>
+          <td>Effective Minibatch size is 128 chunks per optimizer step (learning rate 5e-5, 3 epochs per iteration). Gradient accumulation was implemented due to insufficient VRAM size on my AWS EC2 instance (NVIDIA A10G, 24 GB VRAM).</td>
+        </tr>
+      </table>
+      <br><br>
+
+      <h5 id="related_work">Related Work</h5>
+      <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em;">
+        <tr style="background-color: #f2f2f2;">
+          <th>Work</th>
+          <th>Idea</th>
+          <th>Difference from Jitter-GRPO</th>
+        </tr>
+        <tr>
+          <td>FPO <a href="https://arxiv.org/abs/2507.21053" target="_blank">[McAllister et al., 2025]</a></td>
+          <td>FM-loss likelihood ratio inside PPO</td>
+          <td>Supplies Jitter-GRPO's surrogate; no jitter</td>
+        </tr>
+        <tr>
+          <td><a href="https://arxiv.org/abs/2505.05470" target="_blank">Flow-GRPO</a>,
+            <a href="https://arxiv.org/abs/2505.22094" target="_blank">ReinFlow</a>,
+            <a href="https://arxiv.org/abs/2510.25889" target="_blank">π<sub>RL</sub></a> [2025]</td>
+          <td>Inject noise into the sampler for exploration and per-step likelihoods</td>
+          <td>Jitter-GRPO's jitter lives only in the loss; rollouts use GR00T's unmodified sampler</td>
+        </tr>
+        <tr>
+          <td>ReFPO <a href="https://arxiv.org/abs/2606.21086" target="_blank">[Wang et al., 2026]</a></td>
+          <td>Adds a reflow (CFM) loss to FPO to regularize the flow's geometry</td>
+          <td>Applies to every sample and perturbs no noise; Jacobians are only measured</td>
+        </tr>
+        <tr>
+          <td><a href="https://doi.org/10.1162/neco.1995.7.1.108" target="_blank">[Bishop, 1995]</a>,
+            <a href="https://arxiv.org/abs/1908.02729" target="_blank">[Hoffman et al., 2019]</a></td>
+          <td>Training on noisy inputs ≈ a Jacobian (Tikhonov) penalty</td>
+          <td>Supervised setting; Jitter-GRPO applies it to a flow policy's noise, on successes only</td>
+        </tr>
+      </table>
+      I found no prior work that jitters a flow policy's input noise inside the RL objective to widen the basins of successful actions.
+      <br><br><br>
     </section>
 
     <section id="proof_of_concept">
