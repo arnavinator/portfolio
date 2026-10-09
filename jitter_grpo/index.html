@@ -430,7 +430,7 @@
       More granular denoising (more steps) leads to more spread in trajectories, but VLA still offers the mean trajectory as a valid 
       trajectory (given the right noise draw). 
       <br>
-      This begs the question: <em>is the mean trajectory in fact a good trajectory such that the VLA's "unimodal fan" justified</em> ? 
+      This begs the question: <em>is the mean trajectory in fact a good trajectory such that the VLA's "unimodal fan" is justified?</em> 
       <br><br>
       If the fan were centered on a good action, executing the chunk nearest its center should be good. To test this without touching any weights,
       I designed and benchmarked a custom inference-time strategy,
@@ -474,7 +474,7 @@
           function is needed.</li>
         <li><strong>Jitter</strong> trains on neighboring noise too: each update also feeds the DiT small jitters of the sampled noise.
           The hypothesis is that this carves stronger basins, pulling nearby noise toward good chunks and pushing it away from bad ones,
-          so <u>random noise sample lands on a good action more often.</u></li>
+          so <u>a random noise sample lands on a good action more often.</u></li>
       </ul>
       <br>
     </section>
@@ -500,7 +500,7 @@
         <li><strong>Intuition:</strong> $v_\theta$ is trained to carry noise to actions along straight ($\tau$-length) paths. If it predicts this chunk's velocity
           $a - \varepsilon$ well, $a$ fits what the model learned, so $a$ is likely in a high-density region of the model's implied distribution, captured by a low MSE. 
         </li>
-        <li><strong>Why MSE?:</strong> A squared error is a negative Gaussian log-likelihood, which is why $-\mathrm{MSE}$ stands in for $\log \pi$: 
+        <li><strong>Why MSE?</strong> A squared error is a negative Gaussian log-likelihood, which is why $-\mathrm{MSE}$ stands in for $\log \pi$: 
           $$p(x) \propto \exp\!\left(-\frac{\|x - \mu\|^2}{2\sigma^2}\right) \implies \ln p(x) = -\frac{\|x - \mu\|^2}{2\sigma^2} + \text{const}$$
         </li>
       </ul>
@@ -952,8 +952,152 @@
     <section id="proof_of_concept">
       <hr>
       <h2>Proof of Concept Example (overfit on single scene)</h2>
-      FIXME
-      <br> <br>
+
+      For this project, I choose the Robocasa Scene <u>CoffeeServeMug</u> in which the GR00T VLA commands the Panda_Omron Embodiment
+      to approach a coffee mug underneath the coffee machine, grasp it carefully, and place the mug in the upright position on the counter top
+      (thereby serving the coffee). NVIDIA reports that the base model (GR00T N1.6) can successfully complete this task 63.5% (measured across 200 samples).
+      <br><br>
+      Before training across many kitchens simulating CoffeeServeMug, the first test is whether Jitter-GRPO can learn at all: overfit one hard state and raise its success
+      rate.
+      <br>
+      To do so, I found and saved a state of CoffeeServeMug in which the GR00T model particularly struggles.
+      <br>
+      Every rollout in this section starts from the same saved simulator state, step 10 of a base GR00T CoffeeServeMug episode. 
+      <br><br>
+      From this state, measured over 40 independent rollouts, the Base GR00T model has a <u>~10% chance of successfully completing this CoffeeServeMug scene</u>. We want to see 
+      if the Jitter-GRPO framework can raise the success rate.
+      <br><br>
+
+      <h5 id="poc_scene">The Scene: A Risky Approach</h5>
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 23%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 40%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./poc_scene.jpg" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 12: The start state (step 10) and where base GR00T's episode went two chunks later (step 12)</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 23%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>Step 10, the start state:</strong> base GR00T is approaching the mug from a risky angle, with its gripper coming in close to the
+          coffee machine. The wrist camera still sees the mug.</li>
+        <li><strong>Step 12, two chunks later:</strong> the base model GR00T's positions itself such that most of the wrist camera's view is blocked, 
+          making grasping/approach much harder.</li>
+      </ul>
+      To succeed, the policy must adjust its approach, then grasp and release the mug despite the obscured view,
+          instead of drifting into states like step 12.
+      <br><br>
+
+      <h5 id="poc_training">Training: 10% → 92% Success</h5>
+      Each iteration rolls out 4 groups of 12 episodes from the start state (all 48 scenes have the same starting point, but are still partitioned into 4 groups 
+      for the sake of GRPO's objective... this is okay and adds some "regularization" in advantage calculations).
+      <br>
+      Note that this section tests the Jitter mechanism with no confounding, as the <a href="#awr_on_success">optional AWR-on-success</a> is disabled.
+      <br>
+      The plot below shows the success rate of the on-policy 48 rollouts that occur at the start of each iteration. Since on-policy data is collected at
+      the start of each episode, the success rate reported for Iteration $N$ is the result of the model training in Iter $N-1$.
+
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 66%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./poc_success_rate.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 13: Success rate per iteration from the step-10 state; dashed lines mark the two configuration changes</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>Nearly 9× the base success rate:</strong> success climbs from 10% to 92% in six updates, then holds at 81–92%. From iteration 6 on,
+          even the weakest group of 12 succeeds at least 75% of the time.</li>
+        <li><strong>More headroom (after iteration 4):</strong> the first run, at <code>jitter_pos</code> = 0.125, plateaued, so I resumed from its
+          iteration-3 checkpoint at <code>jitter_pos</code> = 0.25. Four times the jitter variance (1.6% → 6.25%) gives success rows more room to raise
+          their ratio, and the Jacobian term's gradient grows from ~15% to ~33% of the reinforcement gradient. (The iteration-4 dip is sampling noise:
+          the same checkpoint scored 79% when first sampled.)</li>
+        <li><strong>Stop oversampling failures (after iteration 8):</strong> near 90% success, the balanced sampler's 0.75 cap on each minibatch's
+          success share kept oversampling the few failures. Raising the cap to 0.9 lets minibatches follow the natural share, and training stays
+          stable.</li>
+      </ul>
+      <br>
+
+      <h5 id="poc_step10">Step 10: A New Approach Angle</h5>
+      To see what changed, I repeated the <a href="#motivation">motivation's</a> 100-seed sweep from the start state, through base GR00T and the
+      iteration-8 checkpoint (92% success at iteration 9), with the same 100 noise seeds for both:
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 66%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./poc_fan_step10.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 14: 100 noise seeds from the step-10 state, base GR00T (gray) vs. the iteration-8 checkpoint (green). Bold lines are the means;
+                the shaded steps are the 8 the robot executes.</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>Same reach, new direction:</strong> x is unchanged (5.06 → 5.07) and z dips slightly (−3.07 → −3.16), but y changes shape. Base
+          levels off near 1.4, while iteration 8 keeps sweeping to 1.95 (+34%). By the end of the 8 executed steps, the two y fans no longer overlap.</li>
+        <li><strong>A rotated approach:</strong> the chunk's heading in the horizontal plane turns from 16° to 21°, and it turns for all 100 noise seeds.
+          The whole fan moved, so a random noise sample now lands on the new approach.</li>
+        <li><strong>Just the first chunk:</strong> this is one state and one chunk. <em>Much of the gain may come from later in the episode (the grasp and
+          the release), which these sweeps don't show.</em></li>
+      </ul>
+      <br>
+
+      <h5 id="poc_step12">Step 12: Reacting to a Blocked View</h5>
+      The same comparison at step 12 is shown (the camera view is in Fig. 12, bottom row). Note that there is no guarentee that the new policy actually ends up in this state, so its behavior in this 
+      state is purely for analysis:
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 66%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./poc_fan_step12.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 15: The same 100 noise seeds from the step-12 state</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>Every seed shifts the same way:</strong> iteration 8 reaches less far forward (x: 3.06 → 2.85), swings further sideways
+          (y: 1.44 → 1.82), and drops lower (z: −0.83 → −1.00), turning its heading from 25° to 33°. All 100 seeds shift this way in x and y.</li>
+        <li><strong>Out of the blind spot:</strong> rather than pushing as far in under the machine, the trained policy swings out and down, suggesting it
+          learned to steer the wrist camera toward a clearer view of the mug before grasping.</li>
+      </ul>
+      <strong>Proof of Concept PASSED:</strong> from a state where base GR00T succeeds 10% of the time, Jitter-GRPO reached 92% in 6-8 updates by
+      carving out stronger basins of good actions (through some combination of either a multi-modal (several valid strategies) fan or a tight unimodal fan around a good action).
+      <br><br><br>
     </section>
 
     <section id="full_training">
