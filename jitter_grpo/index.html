@@ -140,6 +140,12 @@
         </ul>
         <li><a href="#proof_of_concept">Proof of Concept Example (overfit on single scene)</a></li>
         <li><a href="#full_training">Full Training Example</a></li>
+        <ul>
+          <li><a href="#full_curve">Training: Enough Jitter, Then AWR-on-Success</a></li>
+          <li><a href="#full_eval">Evaluation: 66% → 86% Across Four Kitchens</a></li>
+          <li><a href="#full_fans">A Tighter Fan in Every Kitchen</a></li>
+          <li><a href="#full_noise">Jacobian Penalty leads to Less Noise Leaks into the Actions</a></li>
+        </ul>
         <li><a href="#future_directions">Future Directions</a></li>
         <li><a href="#code">Full Code</a></li>
       </ul>
@@ -953,9 +959,9 @@
       <hr>
       <h2>Proof of Concept Example (overfit on single scene)</h2>
 
-      For this project, I choose the Robocasa Scene <u>CoffeeServeMug</u> in which the GR00T VLA commands the Panda_Omron Embodiment
-      to approach a coffee mug underneath the coffee machine, grasp it carefully, and place the mug in the upright position on the counter top
-      (thereby serving the coffee). NVIDIA reports that the base model (GR00T N1.6) can successfully complete this task 63.5% (measured across 200 samples).
+      For this project, I chose the RoboCasa scene <u>CoffeeServeMug</u>, in which the GR00T VLA commands the PandaOmron embodiment
+      to approach a coffee mug underneath the coffee machine, grasp it carefully, and place the mug in the upright position on the countertop
+      (thereby serving the coffee). NVIDIA reports that the base model (GR00T N1.6) can successfully complete this task 63.5% of the time (measured across 200 samples).
       <br><br>
       Before training across many kitchens simulating CoffeeServeMug, the first test is whether Jitter-GRPO can learn at all: overfit one hard state and raise its success
       rate.
@@ -964,13 +970,13 @@
       <br>
       Every rollout in this section starts from the same saved simulator state, step 10 of a base GR00T CoffeeServeMug episode. 
       <br><br>
-      From this state, measured over 40 independent rollouts, the Base GR00T model has a <u>~10% chance of successfully completing this CoffeeServeMug scene</u>. We want to see 
+      From this state, measured over 40 independent rollouts, the base GR00T model has a <u>~10% chance of successfully completing this CoffeeServeMug scene</u>. We want to see
       if the Jitter-GRPO framework can raise the success rate.
       <br><br>
 
       <h5 id="poc_scene">The Scene: A Risky Approach</h5>
       <div class="row gx-0 mb-4 mt-4 align-items-center">
-        <div style="width: 23%; padding:0;" class="custom-column">
+        <div style="width: 30%; padding:0;" class="custom-column">
         </div>
 
         <div style="width: 40%; padding:0;" class="custom-column">
@@ -982,14 +988,14 @@
           </figure>
         </div>
 
-        <div style="width: 23%; padding:0;" class="custom-column">
+        <div style="width: 30%; padding:0;" class="custom-column">
         </div>
       </div>
 
       <ul>
         <li><strong>Step 10, the start state:</strong> base GR00T is approaching the mug from a risky angle, with its gripper coming in close to the
           coffee machine. The wrist camera still sees the mug.</li>
-        <li><strong>Step 12, two chunks later:</strong> the base model GR00T's positions itself such that most of the wrist camera's view is blocked, 
+        <li><strong>Step 12, two chunks later:</strong> base GR00T positions itself such that most of the wrist camera's view is blocked,
           making grasping/approach much harder.</li>
       </ul>
       To succeed, the policy must adjust its approach, then grasp and release the mug despite the obscured view,
@@ -997,13 +1003,13 @@
       <br><br>
 
       <h5 id="poc_training">Training: 10% → 92% Success</h5>
-      Each iteration rolls out 4 groups of 12 episodes from the start state (all 48 scenes have the same starting point, but are still partitioned into 4 groups 
+      Each iteration rolls out 4 groups of 12 episodes from the start state (all 48 episodes have the same starting point, but are still partitioned into 4 groups
       for the sake of GRPO's objective... this is okay and adds some "regularization" in advantage calculations).
       <br>
       Note that this section tests the Jitter mechanism with no confounding, as the <a href="#awr_on_success">optional AWR-on-success</a> is disabled.
       <br>
       The plot below shows the success rate of the on-policy 48 rollouts that occur at the start of each iteration. Since on-policy data is collected at
-      the start of each episode, the success rate reported for Iteration $N$ is the result of the model training in Iter $N-1$.
+      the start of each iteration, the success rate reported for Iteration $N$ is the result of the model training in Iter $N-1$.
 
 
       <div class="row gx-0 mb-4 mt-4 align-items-center">
@@ -1069,7 +1075,7 @@
       <br>
 
       <h5 id="poc_step12">Step 12: Reacting to a Blocked View</h5>
-      The same comparison at step 12 is shown (the camera view is in Fig. 12, bottom row). Note that there is no guarentee that the new policy actually ends up in this state, so its behavior in this 
+      The same comparison at step 12 is shown (the camera view is in Fig. 12, bottom row). Note that there is no guarantee that the new policy actually ends up in this state, so its behavior in this 
       state is purely for analysis:
 
       <div class="row gx-0 mb-4 mt-4 align-items-center">
@@ -1103,8 +1109,287 @@
     <section id="full_training">
       <hr>
       <h2>Full Training Example</h2>
-      FIXME
-      <br> <br>
+
+      With the proof of concept passed on a difficult state, full training scales Jitter-GRPO to four random, unique CoffeeServeMug kitchens
+      (a frozen scene pool, seeds 100067–103067). Each group corresponds to one kitchen seed, and each group runs 12 episodes from the first frame of that kitchen,
+      for a total of 48 RoboCasa episodes per iteration of on-policy rollout data collection.
+      <br>
+      Across these four kitchens, base GR00T succeeds 66% of the time (verified via 160 independent rollouts of the base policy).
+      <br><br>
+
+      <h5 id="full_curve">Training: Enough Jitter, Then AWR-on-Success</h5>
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 66%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./full_success_rate.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 16: Success rate per iteration over the four kitchens; the dashed line marks when AWR-on-success was switched on</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>λ = 0.25 is too little jitter for four diverse kitchens:</strong> a first run at λ = 0.25, enough for the single state, stayed flat near
+          65% and then slipped. The FM surrogate caps a success's ratio near $e^{\mathrm{MSE}_{\text{ref}}} \approx 1.002$, so with too little jitter,
+          success rows have almost no headroom and erosion wins. No jitter at all would leave even less.</li>
+        <li><strong>λ = 0.4 learns:</strong> 16% jitter variance lifts success from 65% to 81% in four updates.</li>
+        <li><strong>AWR-on-success holds the lead:</strong> without it, the λ = 0.4 run peaked at 90% and then slid back to 73–75%. With
+          <a href="#awr_on_success">AWR-on-success</a> switched on after iteration 6 ($\kappa = 1.5$), reinforcement carries 1.6–1.8× the erosion
+          mass, and success holds at 77–90%, ending at 85%. (The iteration-6 dip is sampling noise: the same checkpoint scored 90% in the run
+          without AWR-on-success.)</li>
+      </ul>
+      <br>
+
+      <h5 id="full_eval">Evaluation: 66% → 86% Across Four Kitchens</h5>
+      To confirm the training curve, I evaluated the iteration-9 checkpoint (the policy behind iteration 10) with 40 fresh rollouts per kitchen,
+      against the same evaluation of base GR00T:
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 66%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./full_eval.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 17: Success over 40 fresh rollouts per kitchen, base GR00T vs. the iteration-9 checkpoint</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>Every kitchen improves:</strong> +12.5 to +27.5 points per kitchen, and 66.3% → 86.3% overall, matching the 85% training curve.</li>
+        <li><strong>Failures drop by 59%:</strong> from 54 of 160 rollouts to 22. The hardest kitchen (102067) climbs from 52.5% to 72.5%, and
+          101067 reaches 97.5%.</li>
+        <li><strong>Successes come faster:</strong> a successful episode takes 333 steps on average, against 360 for base GR00T (−8%).</li>
+      </ul>
+      <br>
+
+      <h5 id="full_fans">A Tighter Fan in Every Kitchen</h5>
+      To see what changed, I repeated the 100-seed sweep from each kitchen's first observation (step 0), through base GR00T and the iteration-9
+      checkpoint, with the same 100 noise seeds for both. Fig. 18 shows the fans in 3D, and Fig. 19 views them from above.
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 66%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./full_fans3d.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 18: 100 noise seeds from each kitchen's first observation, in 3D. Shaded ellipsoids cover 2σ of the chunk endpoints, thin lines
+                are 30 of the 100 seeds' paths, and stdev is the combined standard deviation of the endpoints in x, y and z.</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 20%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      <div class="row gx-0 mb-4 mt-4 align-items-center">
+        <div style="width: 17%; padding:0;" class="custom-column">
+        </div>
+
+        <div style="width: 60%; padding:0;" class="custom-column">
+          <figure style="margin: 0;">
+            <img src="./full_fans.png" class="img-fluid">
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 19: The same sweeps viewed top-down. Dots are chunk endpoints, and ellipses cover 2σ.</em>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="width: 20%; padding:0;" class="custom-column">
+        </div>
+      </div>
+
+      At the final step of the 16-step action chunk, the standard deviation of the 100 endpoints shrinks by 21–25% in every kitchen, and along every
+      axis (0.65–0.81× base):
+      <div class="row gx-4 mt-3 mb-4 justify-content-center">
+        <div class="col-lg-9">
+          <figure style="margin: 0;">
+            <table class="table table-bordered table-sm mb-1" style="font-size: 0.9em; text-align: center;">
+              <tr style="background-color: #f2f2f2;">
+                <th>Kitchen</th>
+                <th>stdev x</th>
+                <th>stdev y</th>
+                <th>stdev z</th>
+                <th>Combined stdev, $\sqrt{\sigma_x^2 + \sigma_y^2 + \sigma_z^2}$</th>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">100067</td>
+                <td>1.12 → 0.81</td>
+                <td>0.84 → 0.69</td>
+                <td>0.94 → 0.74</td>
+                <td>1.69 → 1.29 (0.76×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">101067</td>
+                <td>1.34 → 0.99</td>
+                <td>0.95 → 0.77</td>
+                <td>1.05 → 0.83</td>
+                <td>1.95 → 1.50 (0.77×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">102067</td>
+                <td>1.71 → 1.37</td>
+                <td>0.70 → 0.53</td>
+                <td>0.56 → 0.36</td>
+                <td>1.93 → 1.51 (0.79×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">103067</td>
+                <td>1.34 → 1.05</td>
+                <td>0.77 → 0.57</td>
+                <td>0.83 → 0.56</td>
+                <td>1.75 → 1.32 (0.75×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">Average</td>
+                <td>1.38 → 1.06</td>
+                <td>0.82 → 0.64</td>
+                <td>0.84 → 0.62</td>
+                <td>1.83 → 1.41 (0.77×)</td>
+              </tr>
+            </table>
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 20: Standard deviation of the chunk endpoints across the 100 noise seeds, base GR00T → iteration-9 checkpoint. Measured only on
+                the first action chunk's endpoint (its final step) from each kitchen's first observation.</em>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+
+      Both policies start each seed from the same initial noise, so their chunks pair up seed by seed, which shows how the fan shrinks:
+      <ul>
+        <li><strong>Closer to center:</strong> 98–100% of seeds land closer to their fan's mean after the 8 executed steps, and 94–100% by the end
+          of the 16-step chunk.</li>
+        <li><strong>Offset correlation:</strong> at least 0.98 between each seed's offset from the center under base and under the checkpoint (per
+          axis). Each seed keeps its direction from the center, and only its distance shrinks.</li>
+        <li><strong>Center shift:</strong> the fan's mean moves by only 6–24% of the base combined stdev.</li>
+      </ul>
+
+      <ul>
+        <li><strong>Just the first chunk:</strong> these sweeps cover one state (step 0) and one chunk per kitchen. <em>Much of the gain may come
+          from later in the episode (the grasp and the release), which these sweeps don't show.</em></li>
+      </ul>
+      In the proof of concept, the fan moved to a new approach. Across four kitchens, Jitter-GRPO instead tightens each fan around its center: the
+      <em>tight unimodal fan around a good action</em> the <a href="#mean_action">motivation</a> called for.
+      <br><br>
+
+      <h5 id="full_noise">Jacobian Penalty leads to Less Noise Leaks into the Actions</h5>
+      <u>As a result of Jitter-GRPO's Jacobian penalty, less noise leaks into the actions.</u> All 100 seeds in a kitchen use the same observation
+      and the same weights, so any difference between their chunks comes from the noise. For each seed $s$, take the DiT's raw 16×3 end-effector
+      action $a_s$ and its initial noise $\varepsilon_s$. Both live in the same normalized space, because denoising starts at $a^0 = \varepsilon$.
+      <ol>
+        <li><strong>Keep only the high frequencies.</strong>
+          <ul>
+            <li>Subtract the seed-average chunk, which is identical for every seed and contains no noise.</li>
+            <li>Take an FFT (Fourier transform) of each 16-step sequence and zero the three slowest frequencies: the constant offset, then 1 and 2
+              cycles per chunk. This is $\tilde{a}$.</li>
+            <li>$\tilde{\varepsilon}$ is the noise put through the same two steps: subtract the seed-average noise (nearly zero, since each seed's
+              noise is random) and zero its three slowest frequencies.</li>
+            <li><em>Why drop the three slowest modes?</em>
+              <ul>
+                <li>They are where the noise is supposed to act: a seed picks the chunk's overall direction and curvature within the fan, which is
+                  exactly what Figs. 18–20 measure. That's choosing a motion, not copying noise, so leaving them in would just re-measure fan width.
+                  The noise, in contrast, is white, with equal energy at every frequency, while real motions are smooth. Fast content that tracks the
+                  noise step for step is therefore leakage, and it shows up as jerk.</li>
+                <li>Across the four kitchens, <em>97–98.5% of the actions' seed-to-seed energy sits in those three modes, against about 30% for the white
+                  noise.</em></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><strong>Regress:</strong> fit $\tilde{a} \approx \beta\,\tilde{\varepsilon}$ by least squares over every seed, step and axis,
+          $$\beta = \frac{\sum \tilde{a} \cdot \tilde{\varepsilon}}{\sum \tilde{\varepsilon}^{\,2}}$$
+          Plot each noise value against the matching action value, and $\beta$ is the slope of the best-fit line. There's no intercept because both
+          are zero-mean.
+          <ul>
+            <li><em>Why is the slope the share passed through unchanged?</em>
+              <ul>
+                <li>Suppose the action's fast part is a scaled copy of the noise's fast part plus something unrelated,
+                  $\tilde{a} = c\,\tilde{\varepsilon} + r$. Then the fit recovers $\beta \approx c$, because the unrelated part $r$ averages out.
+                  "Unchanged" means the same step-by-step pattern, just scaled by $c$.</li>
+                <li>At $\tau = 0$ the chunk <em>is</em> the noise, so $c = 1$; a perfect denoiser would erase it, so $c = 0$. Base GR00T keeps about
+                  0.5–0.7%.</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ol>
+      Fig. 21 reports $\beta$ for base GR00T and the checkpoint in each kitchen:
+      <div class="row gx-4 mt-3 mb-4 justify-content-center">
+        <div class="col-lg-6">
+          <figure style="margin: 0;">
+            <table class="table table-bordered table-sm mb-1" style="font-size: 0.9em; text-align: center;">
+              <tr style="background-color: #f2f2f2;">
+                <th>Kitchen</th>
+                <th>Noise passed through ($\beta$), base GR00T → checkpoint</th>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">100067</td>
+                <td>0.50% → 0.38% (0.75×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">101067</td>
+                <td>0.57% → 0.33% (0.58×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">102067</td>
+                <td>0.61% → 0.35% (0.57×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">103067</td>
+                <td>0.68% → 0.56% (0.83×)</td>
+              </tr>
+              <tr>
+                <td style="background-color: #f3f0ff; font-weight: 600;">Average</td>
+                <td>0.59% → 0.40% (0.68×)</td>
+              </tr>
+            </table>
+            <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
+              <em>Fig. 21: $\beta$, the share of each seed's initial noise that passes unchanged into its action's step-to-step wiggle. Measured only on the first
+                action chunk from each kitchen's first observation.</em>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+      In every kitchen, the <strong><u>checkpoint passes 17–43% less of its initial noise straight into its actions (0.68× base on
+      average)</u></strong>.
+      <br><br>
+      <em>Isn't this just the tighter fan?</em> If the checkpoint only shrank every seed's deviation from the mean, the fast wiggle would shrink by
+      the same factor as the fan and still copy the noise exactly. Two checks say otherwise:
+      <ul>
+        <li>The fast wiggle shrinks much less than the fan: to 0.84–0.94× base, against 0.77–0.79× for the three slow modes.</li>
+        <li>What's left looks less like the noise. The correlation between each seed's $\tilde{a}$ and its own $\tilde{\varepsilon}$, which no
+          amount of shrinking can change, falls from 0.41–0.44 to 0.26–0.31.</li>
+      </ul>
+      The drop in noise passed through comes mostly from the wiggle decorrelating from the noise, not from the fan
+      getting smaller.
+      <br><br>
+      This is exactly the behavior the <a href="#jitter_jacobian">Jacobian penalty</a> was built to produce. On every
+      success, a jittered row asks the DiT to land on the same action from nearby noise, which in expectation penalizes the endpoint Jacobian
+      $\|I + (1 - \tau)\,\partial v_\theta / \partial x\|_F^2$: how far the predicted action moves when the noise moves. A field with a smaller
+      endpoint Jacobian absorbs input noise instead of copying it into the action, and that is what the measurement shows, in all four kitchens,
+      with no extra network, no double backward pass, and no change to the sampler. Together with the 21–25% tighter fans above, both ends of the
+      spectrum respond: the slow, noise-driven choice of motion narrows, and the fast wiggle copied from the noise shrinks.
+      <br><br>
+      <strong>Full Training PASSED:</strong> with jitter, along with late-enabled AWR-on-success for stability, Jitter-GRPO raised GR00T's success
+      across four kitchens from 66% to 86%, cut failures by 59%, and tightened every fan.
+      <br><br><br>
     </section>
 
     <section id="future_directions">
