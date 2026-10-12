@@ -116,39 +116,50 @@
       <hr>
 
       <h2 class="mb-3">Table of Contents</h2>
-      <ul>
-        <li><a href="#vla_peft_overview">VLA / PEFT Overview</a></li>
-        <ul>
-          <li><a href="#gr00t_panda_omron">GR00T N1.6 on PandaOmron</a></li>
-          <li><a href="#lora_targets">LoRA Targets</a></li>
-        </ul>
-        <li><a href="#motivation">Motivation: Investigating GR00T's Denoising</a></li>
-        <ul>
-          <li><a href="#mean_action">Is the mean a good action?</a></li>
-          <li><a href="#diagnosis_to_jitter_grpo">From Diagnosis to Jitter-GRPO</a></li>
-        </ul>
-        <li><a href="#theory">Jitter-GRPO Theory</a></li>
-        <ul>
-          <li><a href="#fm_surrogate">Flow Matching (FM) Surrogate Log-Probability</a></li>
-          <li><a href="#grpo_robot">Applying the FM Surrogate to GRPO on Robot Trajectories</a></li>
-          <li><a href="#jitter_jacobian">Jitter as a Jacobian Regularizer</a></li>
-          <li><a href="#awr_on_success">Optional Reinforcing Successes (AWR-on-Success)</a></li>
-          <li><a href="#relative_clip">Relative Lower Clip</a></li>
-          <li><a href="#advantage_norm">Advantage Normalization</a></li>
-          <li><a href="#implementation_details">Additional Implementation Details</a></li>
-          <li><a href="#related_work">Related Work</a></li>
-        </ul>
-        <li><a href="#proof_of_concept">Proof of Concept Example (overfit on single scene)</a></li>
-        <li><a href="#full_training">Full Training Example</a></li>
-        <ul>
-          <li><a href="#full_curve">Training: Enough Jitter, Then AWR-on-Success</a></li>
-          <li><a href="#full_eval">Evaluation: 66% → 86% Across Four Kitchens</a></li>
-          <li><a href="#full_fans">A Tighter Fan in Every Kitchen</a></li>
-          <li><a href="#full_noise">Jacobian Penalty leads to Less Noise Leaks into the Actions</a></li>
-        </ul>
-        <li><a href="#future_directions">Future Directions</a></li>
-        <li><a href="#code">Full Code</a></li>
-      </ul>
+      <div class="row toc-columns">
+        <div class="col-md-6">
+          <ul>
+            <li><a href="#vla_peft_overview">VLA / PEFT Overview</a></li>
+            <ul>
+              <li><a href="#gr00t_panda_omron">GR00T N1.6 on PandaOmron</a></li>
+              <li><a href="#lora_targets">LoRA Targets</a></li>
+            </ul>
+            <li><a href="#motivation">Motivation: Investigating GR00T's Denoising</a></li>
+            <ul>
+              <li><a href="#mean_action">Is the mean a good action?</a></li>
+              <li><a href="#diagnosis_to_jitter_grpo">From Diagnosis to Jitter-GRPO</a></li>
+            </ul>
+            <li><a href="#theory">Jitter-GRPO Theory and Implementation</a></li>
+            <ul>
+              <li><a href="#fm_surrogate">Flow Matching (FM) Surrogate Log-Probability</a></li>
+              <li><a href="#grpo_robot">Applying the FM Surrogate to GRPO on Robot Trajectories</a></li>
+              <li><a href="#jitter_jacobian"><em>Jitter as a Jacobian Regularizer</em></a></li>
+              <li><a href="#awr_on_success">Optional Reinforcing Successes (AWR-on-Success)</a></li>
+              <li><a href="#relative_clip">Relative Lower Clip</a></li>
+              <li><a href="#advantage_norm">Advantage Normalization</a></li>
+              <li><a href="#implementation_details">Additional Implementation Details</a></li>
+              <li><a href="#related_work">Related Work</a></li>
+            </ul>
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <ul>
+            <li><a href="#proof_of_concept">Proof of Concept Example (overfit on single scene)</a></li>
+            <ul>
+              <li><a href="#poc_training">Training: 10% → 92% Success</a></li>
+              <li><a href="#poc_approach">Learning a New Approach Angle</a></li>
+            </ul>
+            <li><a href="#full_training">Full Training Example</a></li>
+            <ul>
+              <li><a href="#full_eval">Training and Evaluation: 66% → 86% Across Four Kitchens</a></li>
+              <li><a href="#full_fans">A Tighter Fan in Every Kitchen</a></li>
+              <li><a href="#full_noise"><em>Jacobian Penalty Leads to Less Noise Leaking into the Actions</em></a></li>
+            </ul>
+            <li><a href="#future_directions">Future Directions / Reflections</a></li>
+            <li><a href="#code">Full Code</a></li>
+          </ul>
+        </div>
+      </div>
       <br>
     </section>
 
@@ -345,10 +356,10 @@
       Each line is one seed's cumulative end-effector delta over the 16-step chunk.
 
       <div class="row gx-0 mb-4 mt-4 align-items-center">
-        <div style="width: 2%; padding:0;" class="custom-column">
+        <div style="width: 5.5%; padding:0;" class="custom-column">
         </div>
 
-        <div style="width:35%; padding:0;" class="custom-column">
+        <div style="width: 35%; padding:0;" class="custom-column">
           <figure style="margin: 0;">
             <img src="./scene_side_wrist.png" class="img-fluid">
             <figcaption style="text-align: center; font-size: 0.8em; margin-top: 5px;">
@@ -381,7 +392,7 @@
           </figure>
         </div>
 
-        <div style="width: 2%; padding:0;" class="custom-column">
+        <div style="width: 5.5%; padding:0;" class="custom-column">
         </div>
       </div>
 
@@ -487,7 +498,7 @@
 
     <section id="theory">
       <hr>
-      <h2>Jitter-GRPO Theory</h2>
+      <h2>Jitter-GRPO Theory and Implementation</h2>
 
       Throughout, $\varepsilon$ is the exact noise the server drew for a chunk during the rollout, and $a$ is the raw output the 4-step sampler
       produced from that same $\varepsilon$. Jitter-GRPO fine-tunes the DiT with GRPO so that, when $a$ succeeded, slightly perturbed noise
@@ -974,7 +985,6 @@
       if the Jitter-GRPO framework can raise the success rate.
       <br><br>
 
-      <h5 id="poc_scene">The Scene: A Risky Approach</h5>
       <div class="row gx-0 mb-4 mt-4 align-items-center">
         <div style="width: 30%; padding:0;" class="custom-column">
         </div>
@@ -1042,9 +1052,12 @@
       </ul>
       <br>
 
-      <h5 id="poc_step10">Step 10: A New Approach Angle</h5>
-      To see what changed, I repeated the <a href="#motivation">motivation's</a> 100-seed sweep from the start state, through base GR00T and the
-      iteration-8 checkpoint (92% success at iteration 9), with the same 100 noise seeds for both:
+      <h5 id="poc_approach">Learning a New Approach Angle</h5>
+      To see what changed, I repeated the <a href="#motivation">motivation's</a> 100-seed sweep through base GR00T and the iteration-8 checkpoint
+      (92% success at iteration 9), with the same 100 noise seeds for both: first from the start state (step 10), then from the state base GR00T
+      reached two chunks later (step 12).
+
+      <h6 id="poc_step10">Step 10: A Rotated Approach</h6>
 
       <div class="row gx-0 mb-4 mt-4 align-items-center">
         <div style="width: 17%; padding:0;" class="custom-column">
@@ -1074,7 +1087,7 @@
       </ul>
       <br>
 
-      <h5 id="poc_step12">Step 12: Reacting to a Blocked View</h5>
+      <h6 id="poc_step12">Step 12: Reacting to a Blocked View</h6>
       The same comparison at step 12 is shown (the camera view is in Fig. 12, bottom row). Note that there is no guarantee that the new policy actually ends up in this state, so its behavior in this 
       state is purely for analysis:
 
@@ -1117,7 +1130,8 @@
       Across these four kitchens, base GR00T succeeds 66% of the time (verified via 160 independent rollouts of the base policy).
       <br><br>
 
-      <h5 id="full_curve">Training: Enough Jitter, Then AWR-on-Success</h5>
+      <h5 id="full_eval">Training and Evaluation: 66% → 86% Across Four Kitchens</h5>
+      <h6 id="full_curve">Training: Enough Jitter, Then AWR-on-Success</h6>
       <div class="row gx-0 mb-4 mt-4 align-items-center">
         <div style="width: 17%; padding:0;" class="custom-column">
         </div>
@@ -1147,7 +1161,7 @@
       </ul>
       <br>
 
-      <h5 id="full_eval">Evaluation: 66% → 86% Across Four Kitchens</h5>
+      <h6 id="full_eval_results">Independent Evaluation</h6>
       To confirm the training curve, I evaluated the iteration-9 checkpoint (the policy behind iteration 10) with 40 fresh rollouts per kitchen,
       against the same evaluation of base GR00T:
 
@@ -1194,12 +1208,12 @@
           </figure>
         </div>
 
-        <div style="width: 20%; padding:0;" class="custom-column">
+        <div style="width: 17%; padding:0;" class="custom-column">
         </div>
       </div>
 
       <div class="row gx-0 mb-4 mt-4 align-items-center">
-        <div style="width: 17%; padding:0;" class="custom-column">
+        <div style="width: 20%; padding:0;" class="custom-column">
         </div>
 
         <div style="width: 60%; padding:0;" class="custom-column">
@@ -1289,7 +1303,7 @@
       <em>tight unimodal fan around a good action</em> the <a href="#mean_action">motivation</a> called for.
       <br><br>
 
-      <h5 id="full_noise">Jacobian Penalty leads to Less Noise Leaks into the Actions</h5>
+      <h5 id="full_noise">Jacobian Penalty Leads to Less Noise Leaking into the Actions</h5>
       <u>As a result of Jitter-GRPO's Jacobian penalty, less noise leaks into the actions.</u> All 100 seeds in a kitchen use the same observation
       and the same weights, so any difference between their chunks comes from the noise. For each seed $s$, take the DiT's raw 16×3 end-effector
       action $a_s$ and its initial noise $\varepsilon_s$. Both live in the same normalized space, because denoising starts at $a^0 = \varepsilon$.
@@ -1394,7 +1408,7 @@
 
     <section id="future_directions">
       <hr>
-      <h2>Future Directions</h2>
+      <h2>Future Directions / Reflections</h2>
       FIXME
       <br> <br>
     </section>

@@ -354,3 +354,10 @@ pre.diagram .note {
 #backToTop:hover {
   background-color: #a30d0d;  /* darker red on hover */
 }
+
+/* Two-column table of contents: gray divider between the columns once they sit side by side */
+@media (min-width: 768px) {
+  .toc-columns > div:first-child {
+    border-right: 1px solid #ccc;
+  }
+}
