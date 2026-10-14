@@ -82,13 +82,16 @@
         <!-- Image column, md 5/12 of row -->
         <div class="col-md-5 text-left ps-lg-5 pe-lg-5">
           <figure class="figure">
-            <img 
-              src="./graduation_pic.jpeg" 
-              alt="Harvard '23 Grad Pic" 
+            <!-- Crop: aspect-ratio is width / height (raise it for a shorter photo); the second
+                 object-position value picks the vertical crop (0% keeps the top, 100% the bottom) -->
+            <img
+              src="./home_pic.jpg"
+              alt="Arnav Srivastava"
               class="figure-img img-fluid rounded"
+              style="width: 100%; aspect-ratio: 1 / 1; object-fit: cover; object-position: 50% 40%;"
             >
             <figcaption class="figure-caption text-white ps-2">
-              <p class="fst-italic mb-0 fs-6">
+              <p class="fst-italic mb-0" style="font-size: 1.1rem; font-weight: 600;">
                 Harvard University, Class of 2023
               </p>
               <ul class="ps-3 fs-6 mb-0">
