@@ -560,10 +560,17 @@
           $$p(x) \propto \exp\!\left(-\frac{\|x - \mu\|^2}{2\sigma^2}\right) \implies \ln p(x) = -\frac{\|x - \mu\|^2}{2\sigma^2} + \text{const}$$
         </li>
       </ul>
+      Expanded, the ratio compares the current field with the rollout policy's field on the same inputs, and only the current field carries gradient:
+      $$\rho = \exp\left(\frac{1}{K} \sum_{k=1}^{K} \Big[\underbrace{-\big\| v_\theta(x_{\tau_k} \mid \tau_k, o) - v_{\text{target}} \big\|^2}_{\text{gradient flows here}}
+        + \underbrace{\big\| v_{\text{ref}}(x_{\tau_k} \mid \tau_k, o) - v_{\text{target}} \big\|^2}_{\text{no gradient (detached)}}\Big]\right),
+        \qquad v_{\text{target}} = a - \varepsilon$$
+      where $v_{\text{ref}}$ is the rollout policy's field, computed once before the update.
+      <br><br>
       With the surrogate, the ratio is a difference of MSEs, $\ln \rho_i \approx \mathrm{MSE}_{\text{ref},i} - \mathrm{MSE}_{\theta,i}$. The surrogate's
       unknown constant cancels, so $\rho$ measures only how the update changed $v_\theta$. Note that while $\mathrm{MSE}_{\text{ref},i}$ and $\mathrm{MSE}_{\theta,i}$ are not
-      exact measures of log likelihoods themselves, since these constants cancel when subtracted, their difference is a good proxy for the ratio. 
-      <br><br>
+      exact measures of log likelihoods themselves, since these constants cancel when subtracted, their difference is a good proxy for the ratio.
+      <br>
+      <br>
       Note that this FM surrogate fits LoRA on GR00T better than the alternatives:
       <table class="table table-bordered table-sm mt-2" style="font-size: 0.9em;">
         <tr style="background-color: #f2f2f2;">
